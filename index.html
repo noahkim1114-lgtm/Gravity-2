@@ -58,11 +58,11 @@
   
   .layer { position: absolute; inset: 0; pointer-events: none; }
   
-  /* 돌 이동 속도 늦춤 (0.35s -> 0.55s) */
+  /* 돌 이동 속도 더욱 늦춤 (0.35s -> 0.65s) */
   .stone, .ghost, .clone {
     position: absolute; width: calc(100% / var(--n)); height: calc(100% / var(--n)); 
     display: flex; align-items: center; justify-content: center;
-    transition: left .55s cubic-bezier(.2,.8,.2,1), top .55s cubic-bezier(.2,.8,.2,1);
+    transition: left .65s cubic-bezier(.2,.8,.2,1), top .65s cubic-bezier(.2,.8,.2,1);
   }
   .clone { z-index: 5; }
   
@@ -102,16 +102,18 @@
   /* 튜토리얼 모달 UI */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
   .modal-overlay.show { opacity: 1; pointer-events: auto; }
-  .modal-content { background: var(--panel); border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 480px; padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+  .modal-content { background: var(--panel); border: 1px solid #333; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
   .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 12px; }
   .modal-header h2 { margin: 0; font-size: 20px; color: #fff; }
   .modal-header button { background: none; border: none; font-size: 24px; color: var(--muted); padding: 0; }
   .modal-header button:hover { color: #fff; }
   
-  .page { display: none; font-size: 15px; color: #ccc; line-height: 1.7; min-height: 150px; }
-  .page.active { display: block; }
+  .page { display: none; font-size: 15px; color: #ccc; line-height: 1.6; }
+  .page.active { display: block; animation: fadeIn 0.3s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   .page h3 { color: var(--accent); margin-top: 0; margin-bottom: 12px; font-size: 16px; }
-  .example-box { background: #000; border: 1px solid #222; padding: 12px; border-radius: 4px; font-size: 14px; margin-top: 12px; color: #aaa; }
+  
+  .ex-container { margin: 16px 0; display: flex; justify-content: center; gap: 10px; }
   
   .modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
   .modal-footer button { padding: 8px 16px; font-size: 14px; }
@@ -198,52 +200,44 @@
 <div id="tutorialModal" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
-      <h2>Gravity 매뉴얼</h2>
+      <h2>Gravity 규칙 (9x9 기준)</h2>
       <button id="closeModalBtn">✕</button>
     </div>
     
     <div class="modal-body">
       <!-- 1페이지 -->
       <div class="page active" id="page1">
-        <h3>1. 개요 및 승리 조건</h3>
-        흑(선공)과 백(후공)이 번갈아 빈 칸에 돌을 놓는 추상 전략 보드게임입니다.<br><br>
-        보드판 전체에 <b>빈 칸이 단 1개 남는 시점</b>에 대국이 즉시 종료되며, 종료 시점을 기준으로 <b>상하좌우로 연결된 자신의 돌 무리 중 가장 큰 무리를 형성한 플레이어가 승리</b>합니다.
+        <h3>1. 승리 조건</h3>
+        흑(선공)과 백(후공)이 번갈아 빈 칸에 돌을 놓습니다.<br>
+        보드판 전체에 <b>빈 칸이 단 1개 남는 시점</b>에 대국이 즉시 종료되며, <b>상하좌우로 연결된 자신의 돌 무리 중 가장 큰 무리를 형성한 플레이어가 승리</b>합니다.
+        <div class="ex-container" id="ex1"></div>
       </div>
       
       <!-- 2페이지 -->
       <div class="page" id="page2">
-        <h3>2. 보드의 형태: 환상형(Torus)</h3>
-        보드의 상하좌우 끝은 서로 논리적으로 연결되어 있습니다.<br>
-        따라서 본 게임에는 '중앙'이나 '구석'이 존재하지 않으며, 모든 칸은 기하학적으로 동일한 가치를 지닙니다.
-        <div class="example-box">
-          [예시]<br>
-          우측 맨 끝 칸에서 다시 우측으로 이동하면 좌측 맨 끝 칸으로 이어집니다.<br>
-          동일한 원리로, 우측 맨 끝의 돌과 좌측 맨 끝의 돌은 서로 '인접하여 연결된 무리'로 취급됩니다.
-        </div>
+        <h3>2. 환상형(Torus) 보드</h3>
+        <b>보드의 상하좌우 끝은 서로 연결되어 있습니다.</b><br>
+        따라서 이 우주에는 모서리나 중앙이 존재하지 않으며, 보드 끝을 넘어 연결된 돌들도 하나의 무리로 인정됩니다.
+        <div class="ex-container" id="ex2"></div>
       </div>
       
       <!-- 3페이지 -->
       <div class="page" id="page3">
-        <h3>3. 중력 규칙 (돌 당겨오기)</h3>
-        돌이 놓이는 즉시 해당 칸을 기준으로 십자 방향(상·하·좌·우)에 중력이 발생합니다.<br>
-        각 방향별로 가장 가까이에 위치한 돌(색상 무관)이 빈 칸을 따라 미끄러져 이동해 방금 놓은 새 돌에 밀착합니다.
-        <div class="example-box">
-          [예시]<br>
-          일직선상에 <b>(빈칸) - (흑돌) - (백돌) - (빈칸)</b> 이 존재할 때, 맨 왼쪽 빈 칸에 새 돌을 놓으면 <b>가장 가까운 흑돌</b> 1개만 새 돌 쪽으로 끌려옵니다.<br>
-          * 이미 인접한 돌은 이동하지 않으며, 환상형 규칙에 의해 반대편 화면 밖의 돌이 당겨올 수도 있습니다.
-        </div>
+        <h3>3. 중력과 이동</h3>
+        돌이 놓이는 즉시 <b>십자 방향(상·하·좌·우)에 중력이 발생</b>합니다.<br>
+        각 방향별로 가장 가까이에 위치한 돌(색상 무관)이 빈 칸을 따라 미끄러져 <b>방금 놓은 새 돌에 밀착</b>합니다.<br><br>
+        <span style="font-size:13px; color:var(--muted)">[상황 1] 흑돌을 놓았을 때 근처 돌이 당겨오는 모습</span>
+        <div class="ex-container" id="ex3_1"></div>
+        <span style="font-size:13px; color:var(--muted)">[상황 2] 백돌을 놓았을 때 반대편 벽 너머의 돌이 당겨오는 모습</span>
+        <div class="ex-container" id="ex3_2"></div>
       </div>
       
       <!-- 4페이지 -->
       <div class="page" id="page4">
-        <h3>4. 종료 및 동점자 판정</h3>
-        최대 무리의 크기가 서로 같을 경우, 두 번째와 세 번째로 큰 무리의 크기를 순차적으로 비교하여 승패를 가립니다.<br>
-        모든 무리의 크기가 완벽히 동일할 경우 선공의 이점을 내어준 <b>백(후공)이 승리</b>합니다.
-        <div class="example-box">
-          [진행 모드 설명]<br>
-          - <b>플레이 모드</b>: 어떠한 보조 기능도 제공되지 않는 실전 대국입니다.<br>
-          - <b>훈련 모드</b>: AI가 연산한 현재 형세(예상 승률)가 표기되며, '무르기' 및 최적의 수를 추천받는 '힌트 보기' 기능을 사용할 수 있습니다.
-        </div>
+        <h3>4. 동점자 판정</h3>
+        최대 무리의 크기가 서로 같을 경우, <b>두 번째와 세 번째로 큰 무리의 크기를 순차적으로 비교</b>하여 승패를 가립니다.<br>
+        모든 무리의 크기가 완벽히 동일할 경우 <b>백(후공)이 승리</b>합니다.
+        <div class="ex-container" id="ex4"></div>
       </div>
     </div>
     
@@ -256,6 +250,140 @@
 </div>
 
 <script>
+/* =====================================================================
+   SVG Tutorial 예시 생성기
+   ===================================================================== */
+function drawSvg(containerId, bgStones, activeStones, arrows, highlights, texts, overlayText) {
+  let svg = `<svg viewBox="-2 -2 94 94" width="100%" style="background:#1a1a1a; border: 2px solid #4a4d50; border-radius:4px; max-width: 260px; display: block;">`;
+  
+  // 그리드 (9x9)
+  for(let r=0; r<9; r++) {
+    for(let c=0; c<9; c++) {
+      svg += `<rect x="${c*10}" y="${r*10}" width="10" height="10" stroke="#333" stroke-width="0.5" fill="none"/>`;
+    }
+  }
+  
+  // 그라데이션 및 화살표 마커 정의
+  svg += `<defs>
+    <radialGradient id="bg" cx="35%" cy="30%" r="60%"><stop offset="0%" stop-color="#555"/><stop offset="100%" stop-color="#000"/></radialGradient>
+    <radialGradient id="wg" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#bbb"/></radialGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#E3B04B" />
+    </marker>
+  </defs>`;
+
+  // 배경 돌 (연하게)
+  bgStones.forEach(s => {
+    let fill = s.c === 1 ? 'url(#bg)' : 'url(#wg)';
+    svg += `<circle cx="${s.x*10+5}" cy="${s.y*10+5}" r="3.8" fill="${fill}" opacity="0.2"/>`;
+  });
+
+  // 활성 돌
+  activeStones.forEach(s => {
+    let fill = s.c === 1 ? 'url(#bg)' : 'url(#wg)';
+    let op = s.ghost ? 0.3 : 1;
+    svg += `<circle cx="${s.x*10+5}" cy="${s.y*10+5}" r="3.8" fill="${fill}" opacity="${op}"/>`;
+  });
+
+  // 강조 테두리
+  highlights.forEach(h => {
+    svg += `<rect x="${h.x*10}" y="${h.y*10}" width="10" height="10" fill="rgba(227,176,75,0.25)"/>`;
+    svg += `<circle cx="${h.x*10+5}" cy="${h.y*10+5}" r="4.5" stroke="#E3B04B" stroke-width="0.8" fill="none"/>`;
+  });
+
+  // 화살표
+  arrows.forEach(a => {
+    svg += `<line x1="${a.x1*10+5}" y1="${a.y1*10+5}" x2="${a.x2*10+5}" y2="${a.y2*10+5}" stroke="#E3B04B" stroke-width="1.2" marker-end="url(#arrow)"/>`;
+  });
+
+  // 숫자 텍스트
+  texts.forEach(t => {
+    svg += `<text x="${t.x*10+5}" y="${t.y*10+6.5}" font-size="5" font-weight="bold" fill="${t.color||'#fff'}" text-anchor="middle">${t.txt}</text>`;
+  });
+
+  // 전체 오버레이 텍스트
+  if(overlayText) {
+    svg += `<rect x="-2" y="36" width="94" height="18" fill="rgba(0,0,0,0.85)"/>`;
+    svg += `<text x="45" y="47.5" font-size="7" font-weight="bold" fill="#E3B04B" text-anchor="middle">${overlayText}</text>`;
+  }
+
+  svg += `</svg>`;
+  const container = document.getElementById(containerId);
+  if(container) container.innerHTML = svg;
+}
+
+function initTutorialImages() {
+  // Page 1: 종료된 상황 (80개 돌). 중앙 부근에 흑 8개 무리, 우하단에 백 7개 무리. 1칸 빔.
+  let p1_bg = [], p1_act = [], p1_txt = [];
+  let bGrp = [{x:2,y:2},{x:3,y:2},{x:3,y:3},{x:4,y:3},{x:4,y:4},{x:5,y:4},{x:5,y:5},{x:6,y:5}];
+  let wGrp = [{x:5,y:7},{x:6,y:7},{x:7,y:7},{x:7,y:8},{x:8,y:8},{x:8,y:7},{x:8,y:6}];
+  let empty = {x:0, y:0};
+  
+  for(let r=0; r<9; r++){
+    for(let c=0; c<9; c++){
+      if(r===empty.y && c===empty.x) continue;
+      let isB = bGrp.some(p => p.x===c && p.y===r);
+      let isW = wGrp.some(p => p.x===c && p.y===r);
+      if(isB) {
+        p1_act.push({x:c, y:r, c:1});
+        p1_txt.push({x:c, y:r, txt: p1_act.filter(s=>s.c===1).length, color:'#fff'});
+      } else if(isW) {
+        p1_act.push({x:c, y:r, c:2});
+        p1_txt.push({x:c, y:r, txt: p1_act.filter(s=>s.c===2).length, color:'#000'});
+      } else {
+        p1_bg.push({x:c, y:r, c: ((r*9+c)%3===0 ? 2 : 1)}); // 가짜 배경 채우기
+      }
+    }
+  }
+  drawSvg('ex1', p1_bg, p1_act, [], [], p1_txt, "흑 승리! (가장 큰 무리 8칸)");
+
+  // Page 2: 환상형 보드 연결
+  drawSvg('ex2', [], 
+    [{x:0,y:4,c:1}, {x:8,y:4,c:1}], 
+    [{x1:0,y1:4,x2:-0.8,y2:4}, {x1:8,y1:4,x2:8.8,y2:4}], 
+    [{x:0,y:4}, {x:8,y:4}], [], "화면 양 끝은 서로 연결됩니다"
+  );
+
+  // Page 3-1: 일반 이동 (흑 놓음)
+  drawSvg('ex3_1', [], 
+    [{x:4,y:4,c:1}, {x:4,y:1,c:2,ghost:true}, {x:4,y:3,c:2}, {x:2,y:4,c:1,ghost:true}, {x:3,y:4,c:1}], 
+    [{x1:4,y1:1.3,x2:4,y2:2.6}, {x1:2.3,y1:4,x2:2.6,y2:4}], 
+    [{x:4,y:4}], [], ""
+  );
+
+  // Page 3-2: 벽 넘기 (백 놓음)
+  drawSvg('ex3_2', [], 
+    [{x:8,y:4,c:2}, {x:2,y:4,c:1,ghost:true}, {x:0,y:4,c:1}], 
+    [{x1:2,y1:4,x2:0.5,y2:4}, {x1:0,y1:4,x2:-0.8,y2:4}, {x1:8,y1:4,x2:8.8,y2:4}], 
+    [{x:8,y:4}], [], ""
+  );
+
+  // Page 4: 동점 (두 보드 나란히 표시)
+  let p4_act = [
+    {x:1,y:1,c:1},{x:2,y:1,c:1},{x:2,y:2,c:1}, // 흑 3
+    {x:6,y:1,c:2},{x:7,y:1,c:2},{x:7,y:2,c:2}, // 백 3
+    {x:1,y:6,c:1},{x:2,y:6,c:1}, // 흑 2
+    {x:7,y:6,c:2} // 백 1
+  ];
+  let p4_txt = [
+    {x:1,y:1,txt:'1'},{x:2,y:1,txt:'2'},{x:2,y:2,txt:'3'},
+    {x:6,y:1,txt:'1',color:'#000'},{x:7,y:1,txt:'2',color:'#000'},{x:7,y:2,txt:'3',color:'#000'},
+    {x:1,y:6,txt:'1'},{x:2,y:6,txt:'2'},
+    {x:7,y:6,txt:'1',color:'#000'}
+  ];
+  
+  let p4_html = `<div style="display:flex; gap:10px; width:100%;">
+    <div id="ex4_1" style="flex:1;"></div>
+    <div id="ex4_2" style="flex:1;"></div>
+  </div>`;
+  document.getElementById('ex4').innerHTML = p4_html;
+  
+  // 첫 번째: 2번째 무리로 승리
+  drawSvg('ex4_1', [], p4_act, [], [], p4_txt, "최대 무리(3) 동점 → 흑 2번째 무리로 승");
+  // 두 번째: 완전 동점
+  drawSvg('ex4_2', [], p4_act.slice(0,6), [], [], p4_txt.slice(0,6), "완전 동점 → 백(후공) 승리!");
+}
+
 /* =====================================================================
    Gravity Engine (Dynamic Torus Size, MCTS AI)
    ===================================================================== */
@@ -529,7 +657,7 @@ function syncStones(){
         clone.style.left = (s.wrap.toX)*100/N + '%';
         clone.style.top = (s.wrap.toY)*100/N + '%';
         
-        // CSS transition 시간과 맞춰 550ms로 연장
+        // CSS transition 시간과 맞춰 650ms로 연장
         setTimeout(() => {
           clone.remove(); s.wrap = null; s.cloneHandled = false;
           el.style.transition = 'none';
@@ -537,7 +665,7 @@ function syncStones(){
           el.style.top = Math.floor(s.cell/N)*100/N + '%';
           el.offsetHeight;
           el.style.transition = ''; 
-        }, 550);
+        }, 650);
       }
     } else {
       el.style.left = (s.cell%N)*100/N + '%';
@@ -676,12 +804,13 @@ $('prevPageBtn').addEventListener('click', () => {
 
 $('nextPageBtn').addEventListener('click', () => {
   if(currentPage < totalPages) { currentPage++; updateModal(); }
-  else { $('tutorialModal').classList.remove('show'); } // 마지막 페이지면 닫기
+  else { $('tutorialModal').classList.remove('show'); } 
 });
 
 // 최초 초기화 및 게임 시작
 initBoardData(9);
 buildUIGrid();
+initTutorialImages(); // 튜토리얼 SVG 생성
 startGame();
 
 </script>
