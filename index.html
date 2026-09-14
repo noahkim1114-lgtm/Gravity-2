@@ -79,7 +79,7 @@
   .ghost.white .disc { background: var(--stone-w); }
   .ghost.place .disc { opacity: 0.8; box-shadow: 0 0 0 2px var(--accent); }
   
-  /* 끌려갈 예정인 돌은 즉시 살짝 작아짐 */
+  /* 당겨올 돌 축소 효과 */
   .stone.will-move .disc { opacity: 0.5; transform: scale(0.85); transition: transform 0.2s, opacity 0.2s; }
   
   .control-group { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
@@ -404,9 +404,10 @@ function initBoardData(size) {
   }
 }
 
+// ⚠️ 버그 수정 완료: X축(dc), Y축(dr)의 방향을 시각 좌표인 dx, dy에 정확히 매핑함
 function pullsFor(board, cell){
   const out=[];
-  const DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
+  const DIRS=[[-1,0], [1,0], [0,-1], [0,1]]; // [dy(row), dx(col)]
   for(let d=0; d<4; d++){
     const a = ADJ[cell][d]; 
     if(board[a]!==0) continue; 
@@ -414,7 +415,10 @@ function pullsFor(board, cell){
     for(let i=0; i<ray.length; i++){
       const s = ray[i];
       if(board[s]!==0){
-        out.push({ from: s, to: a, dx: -DIRS[d][0] * (i+1), dy: -DIRS[d][1] * (i+1) });
+        // 끌려오는 돌은 DIRS 방향의 정반대 방향으로 당겨짐
+        const dy = -DIRS[d][0] * (i+1);
+        const dx = -DIRS[d][1] * (i+1);
+        out.push({ from: s, to: a, dx: dx, dy: dy });
         break;
       }
     }
@@ -454,7 +458,7 @@ function finalWinner(board){
 }
 
 /* =====================================================================
-   MCTS AI 알고리즘
+   MCTS AI (비동기 연산 적용으로 화면 멈춤 방지)
    ===================================================================== */
 let _rs = 0x2545F491;
 function rnd(){ _rs^=_rs<<13; _rs>>>=0; _rs^=_rs>>>17; _rs^=_rs<<5; _rs>>>=0; return _rs/4294967296; }
@@ -468,7 +472,7 @@ function rollout(board, plies, toMove){
   return finalWinner(b);
 }
 
-function mctsChoose(board, plies, toMove, opts){
+function mctsChooseAsync(board, plies, toMove, opts, callback){
   const iters = opts.iters, timeMs = opts.timeMs; const start = Date.now();
   const root = {board, plies, mover: 3-toMove, n:0, w:0, children:null, result:0};
   const scratch = new Int8Array(CELLS);
@@ -486,31 +490,42 @@ function mctsChoose(board, plies, toMove, opts){
   }
   
   let it = 0;
-  for(; it<iters; it++){
-    if((it&63)===0 && Date.now()-start > timeMs) break;
-    let node = root;
-    while(node.children && node.children.length && !node.result){
-      let best = null, bv = -1; const ln = Math.log(node.n+1);
-      for(const ch of node.children){ 
-        const v = ch.n===0 ? 1e9+rnd() : (ch.w/ch.n) + 1.1*Math.sqrt(ln/ch.n); 
-        if(v>bv){ bv=v; best=ch; } 
+  function chunk() {
+    const chunkStart = Date.now();
+    while(it < iters) {
+      if ((it & 63) === 0) {
+        if (Date.now() - start > timeMs) break;
+        if (Date.now() - chunkStart > 30) {
+          setTimeout(chunk, 0); // 메인 스레드에 양보하여 UI 끊김 방지
+          return;
+        }
       }
-      node = best;
+      let node = root;
+      while(node.children && node.children.length && !node.result){
+        let best = null, bv = -1; const ln = Math.log(node.n+1);
+        for(const ch of node.children){ 
+          const v = ch.n===0 ? 1e9+rnd() : (ch.w/ch.n) + 1.1*Math.sqrt(ln/ch.n); 
+          if(v>bv){ bv=v; best=ch; } 
+        }
+        node = best;
+      }
+      if(!node.result && !node.children && node.n>0) expand(node);
+      if(node.children && node.children.length && !node.result) node = node.children[(rnd()*node.children.length)|0];
+      
+      let res = node.result;
+      if(!res){ scratch.set(node.board); res = rollout(scratch, node.plies, 3-node.mover); }
+      for(let cur=node; cur; cur=cur.parent){ cur.n++; if(res===cur.mover) cur.w++; }
+      it++;
     }
-    if(!node.result && !node.children && node.n>0) expand(node);
-    if(node.children && node.children.length && !node.result) node = node.children[(rnd()*node.children.length)|0];
     
-    let res = node.result;
-    if(!res){ scratch.set(node.board); res = rollout(scratch, node.plies, 3-node.mover); }
-    for(let cur=node; cur; cur=cur.parent){ cur.n++; if(res===cur.mover) cur.w++; }
+    if(!root.children) expand(root);
+    const kids = root.children.slice().sort((a,b) => b.n - a.n);
+    let pick = kids[0];
+    if(opts.topRandom && kids.length > 1) pick = kids[(rnd() * Math.min(opts.topRandom, kids.length))|0];
+    
+    callback({move: pick.move, winrate: pick.n ? pick.w/pick.n : 0.5});
   }
-  
-  if(!root.children) expand(root);
-  const kids = root.children.slice().sort((a,b) => b.n - a.n);
-  let pick = kids[0];
-  if(opts.topRandom && kids.length > 1) pick = kids[(rnd() * Math.min(opts.topRandom, kids.length))|0];
-  
-  return {move: pick.move, winrate: pick.n ? pick.w/pick.n : 0.5};
+  chunk();
 }
 
 const LEVELS = {
@@ -525,7 +540,7 @@ const LEVELS = {
    ===================================================================== */
 const $ = id => document.getElementById(id);
 let game, selected = -1, hintCell = -1;
-let thinking = false, lastPlayerWinRate = null;
+let thinking = false, lastPlayerWinRate = null, isAnimating = false;
 let gameType = 'play', mode = 'ai', level = '2', humanColor = BLACK;
 const stoneEls = new Map();
 const IS_HOVER = window.matchMedia && window.matchMedia('(hover: hover)').matches;
@@ -574,7 +589,7 @@ function undoMove(game){
   document.querySelectorAll('.clone').forEach(e => e.remove()); 
 }
 
-function myTurn(){ return !game.result && !thinking && (mode==='local' || game.toMove===humanColor); }
+function myTurn(){ return !game.result && !thinking && !isAnimating && (mode==='local' || game.toMove===humanColor); }
 
 function buildUIGrid() {
   const grid = $('grid');
@@ -615,29 +630,42 @@ function clearPreview(){ $('ghosts').innerHTML=''; stoneEls.forEach(el=>el.class
 function commit(cell){
   clearPreview(); selected = -1; hintCell = -1;
   playMove(game, cell);
+  isAnimating = true; 
   render(); 
   
-  // AI 연산 처리 로직
-  if(mode === 'ai' && !game.result && game.toMove !== humanColor) {
-    thinking = true; render(); 
+  // 1.0s (0.3s 대기 + 0.7s 이동) 후에 애니메이션 종료 및 AI 호출
+  setTimeout(() => {
+    isAnimating = false;
+    render(); 
+    if(mode === 'ai' && !game.result && game.toMove !== humanColor) {
+      runAITurn();
+    }
+  }, 1000);
+}
+
+function runAITurn() {
+  thinking = true; render(); 
+  const aiStartTime = Date.now();
+  
+  mctsChooseAsync(game.board, game.plies, game.toMove, LEVELS[level], (r) => {
+    const elapsed = Date.now() - aiStartTime;
+    // AI 연산이 너무 빨리 끝났더라도, 애니메이션 종료 후 최소 1초의 시간(1000ms)이 흐르도록 보장
+    const waitTime = Math.max(0, 1000 - elapsed); 
     
-    // 돌이 완전히 이동하는 애니메이션(대기 0.3s + 이동 0.7s = 1.0s)이 끝난 후 계산 시작
     setTimeout(() => {
-      const start = Date.now();
-      const r = mctsChoose(game.board, game.plies, game.toMove, LEVELS[level]);
-      const elapsed = Date.now() - start;
+      thinking = false;
+      lastPlayerWinRate = Math.max(0, Math.min(100, Math.round((1 - r.winrate) * 100)));
+      playMove(game, r.move);
+      isAnimating = true;
+      render();
       
-      // AI가 놓을 때까지 '최소 1초 이상의 대기' 보장 (애니메이션이 끝난 후 기준)
-      const waitTime = Math.max(0, 1000 - elapsed); 
-      
+      // AI의 돌 애니메이션 대기 (총 1.0s)
       setTimeout(() => {
-        thinking = false;
-        lastPlayerWinRate = Math.max(0, Math.min(100, Math.round((1 - r.winrate) * 100)));
-        playMove(game, r.move);
+        isAnimating = false;
         render();
-      }, waitTime);
-    }, 1050);
-  }
+      }, 1000);
+    }, waitTime);
+  });
 }
 
 function syncStones(){
@@ -667,9 +695,10 @@ function syncStones(){
         clone.style.left = (s.wrap.toX)*100/N + '%';
         clone.style.top = (s.wrap.toY)*100/N + '%';
         
-        // CSS transition 시간 (대기0.3+이동0.7)과 맞춰 1050ms로 연장
+        // CSS transition(0.3s+0.7s)에 맞춰 1000ms 후 복제본 청소 (약간의 여유시간 추가)
         setTimeout(() => {
-          clone.remove(); s.wrap = null; s.cloneHandled = false;
+          if(clone && clone.parentNode) clone.remove(); 
+          s.wrap = null; s.cloneHandled = false;
           el.style.transition = 'none';
           el.style.left = (s.cell%N)*100/N + '%';
           el.style.top = Math.floor(s.cell/N)*100/N + '%';
@@ -717,45 +746,37 @@ function render(){
   $('scoreB').textContent = gb[0] || 0;
   $('scoreW').textContent = gw[0] || 0;
 
-  $('undoBtn').disabled = thinking || game.moves.length === 0;
-  $('hintBtn').disabled = thinking || game.result || !myTurn();
+  $('undoBtn').disabled = thinking || game.moves.length === 0 || isAnimating;
+  $('hintBtn').disabled = thinking || game.result || !myTurn() || isAnimating;
   $('resignBtn').disabled = !!game.result;
   $('levelRow').style.display = mode === 'ai' ? 'flex' : 'none';
   $('colorRow').style.display = mode === 'ai' ? 'flex' : 'none';
 }
 
 function showHint(){
-  if(thinking || game.result || !myTurn() || gameType === 'play') return;
+  if(thinking || game.result || !myTurn() || gameType === 'play' || isAnimating) return;
   thinking = true; $('winrateBox').textContent = '최적의 수 찾는 중...'; render();
   
-  setTimeout(() => {
-    const r = mctsChoose(game.board, game.plies, game.toMove, LEVELS['4']);
+  mctsChooseAsync(game.board, game.plies, game.toMove, LEVELS['4'], (r) => {
     hintCell = r.move;
     thinking = false;
     lastPlayerWinRate = Math.round(r.winrate * 100);
     render();
-  }, 50);
+  });
 }
 
 function startGame(){
-  game = newGame(); selected = -1; hintCell = -1; thinking = false; lastPlayerWinRate = null;
+  game = newGame(); selected = -1; hintCell = -1; thinking = false; isAnimating = false; lastPlayerWinRate = null;
   stoneEls.forEach(el=>el.remove()); stoneEls.clear(); clearPreview();
   render(); 
   
-  // 첫 턴이 AI일 경우 처리
   if(mode === 'ai' && game.toMove !== humanColor) {
-    thinking = true; render();
-    setTimeout(() => {
-      const r = mctsChoose(game.board, game.plies, game.toMove, LEVELS[level]);
-      thinking = false;
-      playMove(game, r.move);
-      render();
-    }, 1000);
+    runAITurn();
   }
 }
 
 function undo(){
-  if(thinking || gameType === 'play' || game.moves.length === 0) return;
+  if(thinking || gameType === 'play' || game.moves.length === 0 || isAnimating) return;
   undoMove(game);
   if(mode==='ai' && game.toMove!==humanColor && game.moves.length) undoMove(game);
   selected = -1; hintCell = -1; lastPlayerWinRate = null; clearPreview(); render();
