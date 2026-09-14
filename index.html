@@ -10,8 +10,7 @@
     --panel: #111; 
     --text: #eee; 
     --muted: #888;
-    --board: #151515; 
-    --line: #2a2a2a;
+    --line: rgba(0, 0, 0, 0.25); /* 돌판에 파인 음각 느낌의 선 */
     --stone-b: #000; 
     --stone-w: #ddd;
     --accent: #E3B04B; 
@@ -25,8 +24,11 @@
   }
   button { font: inherit; color: inherit; cursor: pointer; outline: none; }
   
-  .app { max-width: 860px; margin: 0 auto; padding: 40px 20px; display: flex; flex-wrap: wrap; gap: 40px; }
-  .board-col { flex: 1; min-width: 320px; display: flex; flex-direction: column; gap: 12px; }
+  /* 앱 전체 레이아웃 (보드를 키우기 위해 max-width 확장) */
+  .app { max-width: 1040px; margin: 0 auto; padding: 20px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  
+  /* 보드가 살짝 아래로 내려가고 더 커지도록 설정 */
+  .board-col { flex: 1.4; min-width: 360px; display: flex; flex-direction: column; gap: 16px; margin-top: 30px; }
   .panel-col { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 24px; }
   
   .header { display: flex; justify-content: space-between; align-items: flex-end; }
@@ -34,26 +36,38 @@
   
   /* 상태 및 승률 표시 */
   .status-box { display: flex; justify-content: space-between; align-items: center; }
-  .turn-text { font-size: 20px; font-weight: bold; }
+  .turn-text { font-size: 22px; font-weight: bold; }
   .winrate-text { font-size: 16px; font-weight: 600; color: var(--accent); min-height: 24px; }
   
-  /* 9x9 보드 */
+  /* 리얼한 회색 돌판 보드 */
   .board {
+    --n: 9; /* JS에서 크기 변경 시 업데이트 됨 */
     position: relative; width: 100%; aspect-ratio: 1; 
-    background: var(--board); border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+    
+    /* 돌 텍스처 (SVG 노이즈 + 음영 그라데이션) */
+    background-color: #6a6e73;
+    background-image: 
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E"),
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.2) 0%, transparent 50%);
+    
+    border: 4px solid #4a4d50; 
+    border-radius: 6px; overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.7), inset 0 0 20px rgba(0,0,0,0.5);
   }
-  .grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); }
+  .grid { position: absolute; inset: 0; display: grid; }
   .cell { border: 1px solid var(--line); position: relative; }
   .cell.empty { cursor: pointer; }
-  .cell.empty:hover { background: rgba(255,255,255,0.06); }
-  .cell.hinted { background: rgba(227,176,75,0.25); box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell.empty:hover { background: rgba(255,255,255,0.1); }
+  .cell.hinted { background: rgba(227,176,75,0.3); box-shadow: inset 0 0 0 2px var(--accent); }
   .board.over .cell { cursor: default; }
   
   .layer { position: absolute; inset: 0; pointer-events: none; }
   
-  /* 돌 및 애니메이션 */
+  /* 돌 크기 동적 조절 (CSS 변수 활용) */
   .stone, .ghost, .clone {
-    position: absolute; width: 11.1111%; height: 11.1111%; display: flex; align-items: center; justify-content: center;
+    position: absolute; width: calc(100% / var(--n)); height: calc(100% / var(--n)); 
+    display: flex; align-items: center; justify-content: center;
     transition: left .35s cubic-bezier(.2,.8,.2,1), top .35s cubic-bezier(.2,.8,.2,1);
   }
   .clone { z-index: 5; } /* 벽 관통용 복제 돌 */
@@ -67,31 +81,31 @@
   .ghost .disc { opacity: 0.3; }
   .ghost.black .disc { background: var(--stone-b); } 
   .ghost.white .disc { background: var(--stone-w); }
-  .ghost.place .disc { opacity: 0.7; box-shadow: 0 0 0 2px var(--accent); }
+  .ghost.place .disc { opacity: 0.8; box-shadow: 0 0 0 2px var(--accent); }
   .stone.will-move .disc { opacity: 0.5; transform: scale(0.9); }
   
   /* 컨트롤 패널 */
   .control-group { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
   .control-group .label { width: 70px; font-size: 14px; color: var(--muted); }
   
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #000; }
+  .seg { display: inline-flex; border: 1px solid #333; border-radius: 4px; overflow: hidden; background: #000; }
   .seg button { background: transparent; border: 0; padding: 8px 14px; font-size: 14px; color: #777; font-weight: 500; }
-  .seg button:not(:first-child) { border-left: 1px solid var(--line); }
+  .seg button:not(:first-child) { border-left: 1px solid #333; }
   .seg button.on { background: #333; color: #fff; font-weight: bold; }
   
   .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-  .btn { background: #1a1a1a; border: 1px solid var(--line); color: #ddd; padding: 12px; border-radius: 4px; font-size: 15px; font-weight: 600; transition: background 0.2s; }
+  .btn { background: #1a1a1a; border: 1px solid #333; color: #ddd; padding: 12px; border-radius: 4px; font-size: 15px; font-weight: 600; transition: background 0.2s; }
   .btn:hover:not(:disabled) { background: #2a2a2a; }
   .btn.primary { background: #ddd; color: #000; border-color: #ddd; }
   .btn.primary:hover:not(:disabled) { background: #fff; }
   .btn:disabled { opacity: 0.3; cursor: default; }
 
   /* 무리 크기 및 규칙 */
-  .score-card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; justify-content: space-around; }
+  .score-card { background: var(--panel); border: 1px solid #333; border-radius: 6px; padding: 16px; display: flex; justify-content: space-around; }
   .score-item { text-align: center; }
   .score-item span { display: block; font-size: 28px; font-weight: 800; margin-top: 4px; }
   
-  .rules { font-size: 13px; color: var(--muted); background: var(--panel); padding: 16px; border-radius: 6px; border: 1px solid var(--line); }
+  .rules { font-size: 13px; color: var(--muted); background: var(--panel); padding: 16px; border-radius: 6px; border: 1px solid #333; }
   .rules p { margin: 0 0 8px 0; font-weight: bold; color: #ccc; }
   .rules ul { margin: 0; padding-left: 20px; }
   .rules li { margin-bottom: 4px; }
@@ -106,7 +120,7 @@
   <div class="board-col">
     <div class="header">
       <h1 class="title">Gravity</h1>
-      <div id="placedCount" style="color:var(--muted); font-size:14px;">0 / 80</div>
+      <div id="placedCount" style="color:var(--muted); font-size:14px; margin-bottom: 6px;">0 / 80</div>
     </div>
     
     <div class="status-box">
@@ -129,6 +143,15 @@
     </div>
 
     <div>
+      <div class="control-group">
+        <div class="label">보드 크기</div>
+        <div class="seg" id="sizeSeg">
+          <button data-v="5">5x5</button>
+          <button data-v="7">7x7</button>
+          <button data-v="9" class="on">9x9</button>
+          <button data-v="11">11x11</button>
+        </div>
+      </div>
       <div class="control-group">
         <div class="label">진행 모드</div>
         <div class="seg" id="typeSeg">
@@ -169,13 +192,13 @@
     </div>
 
     <div class="rules">
-      <p>9x9 환상형(Torus) 규칙</p>
+      <p>환상형(Torus) 우주 규칙</p>
       <ul>
         <li>보드의 끝은 반대편 끝과 연결되어 있습니다. (중앙/구석 없음)</li>
-        <li>돌을 놓으면 상하좌우(화면 밖 연결 포함) 가장 가까운 돌이 끌려옵니다.</li>
-        <li>가장 큰 무리를 만든 사람이 승리하며, 동점 시 백(후공)이 승리합니다.</li>
+        <li>돌을 놓으면 십자 방향(화면 밖 연결 포함)으로 가장 가까운 돌들이 끌려옵니다.</li>
+        <li>보드의 칸이 1칸 남을 때 종료되며, 가장 큰 무리를 만든 사람이 승리합니다. (동점 시 후공 승리)</li>
         <li><b>플레이 모드</b>: 실전 모드입니다.</li>
-        <li><b>훈련 모드</b>: 내 예상 승률을 실시간으로 확인하고 무르기/힌트를 사용할 수 있습니다.</li>
+        <li><b>훈련 모드</b>: 내 예상 승률 실시간 확인 및 무르기/힌트가 가능합니다.</li>
       </ul>
     </div>
   </div>
@@ -183,27 +206,39 @@
 
 <script>
 /* =====================================================================
-   Gravity Engine (9x9 Torus, MCTS AI, Rules)
+   Gravity Engine (Dynamic Torus Size, MCTS AI, Rules)
    ===================================================================== */
-const N=9, CELLS=81, MAX_PLIES=80;
-const BLACK=1, WHITE=2;
-const ADJ=[], RAYS=[];
+let N = 9, CELLS = 81, MAX_PLIES = 80;
+const BLACK = 1, WHITE = 2;
+let ADJ = [], RAYS = [];
 const wrap = (x) => ((x % N) + N) % N;
 
-// 보드 기하학(Torus) 초기화
-for(let cell=0; cell<CELLS; cell++){
-  const r=Math.floor(cell/N), c=cell%N; const adj=[], rays=[];
-  const DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
-  for(const [dr,dc] of DIRS){
-    adj.push(wrap(r+dr)*N + wrap(c+dc));
-    const ray=[];
-    for(let k=2; k<=4; k++){ ray.push(wrap(r+dr*k)*N + wrap(c+dc*k)); }
-    rays.push(ray);
+// MCTS 연산용 배열 (최대 11x11인 121칸 고정 할당으로 속도 최적화)
+const MAX_POSSIBLE_CELLS = 121;
+const _seen = new Uint8Array(MAX_POSSIBLE_CELLS), _stack = new Int8Array(MAX_POSSIBLE_CELLS), _emp = new Int8Array(MAX_POSSIBLE_CELLS);
+
+// 보드 기하학 동적 초기화 함수
+function initBoardData(size) {
+  N = size; CELLS = N * N; MAX_PLIES = CELLS - 1;
+  ADJ = []; RAYS = [];
+  
+  // 환상형 맵에서 겹치지 않게 당겨올 수 있는 최대 최단거리
+  const maxDist = Math.floor(N / 2);
+  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+  
+  for(let cell=0; cell<CELLS; cell++){
+    const r = Math.floor(cell/N), c = cell%N; 
+    const adj = [], rays = [];
+    for(const [dr,dc] of DIRS){
+      adj.push(wrap(r+dr)*N + wrap(c+dc));
+      const ray = [];
+      for(let k=2; k<=maxDist; k++){ ray.push(wrap(r+dr*k)*N + wrap(c+dc*k)); }
+      rays.push(ray);
+    }
+    ADJ.push(adj); RAYS.push(rays);
   }
-  ADJ.push(adj); RAYS.push(rays);
 }
 
-// 중력으로 끌려오는 돌 계산 (dx, dy는 시각적 애니메이션 처리를 위함)
 function pullsFor(board, cell){
   const out=[];
   const DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
@@ -230,7 +265,6 @@ function applyMove(board, cell, player){
 }
 
 // 가장 큰 무리 크기 계산 (BFS)
-const _seen = new Uint8Array(CELLS), _stack = new Int8Array(CELLS);
 function groupSizes(board, player){
   _seen.fill(0); const sizes=[];
   for(let i=0; i<CELLS; i++){
@@ -252,7 +286,7 @@ function finalWinner(board){
   const a=groupSizes(board,BLACK), b=groupSizes(board,WHITE);
   const n=Math.max(a.length,b.length);
   for(let i=0; i<n; i++){ const x=a[i]||0, y=b[i]||0; if(x!==y) return x>y ? BLACK : WHITE; }
-  return WHITE;
+  return WHITE; // 동점 시 후공 승리
 }
 
 /* =====================================================================
@@ -260,7 +294,6 @@ function finalWinner(board){
    ===================================================================== */
 let _rs = 0x2545F491;
 function rnd(){ _rs^=_rs<<13; _rs>>>=0; _rs^=_rs>>>17; _rs^=_rs<<5; _rs>>>=0; return _rs/4294967296; }
-const _emp = new Int8Array(CELLS);
 
 function rollout(board, plies, toMove){
   const b = board.slice(); let p = toMove;
@@ -310,7 +343,6 @@ function mctsChoose(board, plies, toMove, opts){
   
   if(!root.children) expand(root);
   const kids = root.children.slice().sort((a,b) => b.n - a.n);
-  // 탐색 횟수가 적은 1단계 AI를 위해 약간의 랜덤성 부여
   let pick = kids[0];
   if(opts.topRandom && kids.length > 1) pick = kids[(rnd() * Math.min(opts.topRandom, kids.length))|0];
   
@@ -318,7 +350,7 @@ function mctsChoose(board, plies, toMove, opts){
 }
 
 const LEVELS = {
-  '1': {iters: 100,    timeMs: 300, topRandom: 4}, // 가장 쉬움
+  '1': {iters: 150,    timeMs: 300, topRandom: 4}, // 가장 쉬움
   '2': {iters: 2000,   timeMs: 1500},
   '3': {iters: 15000,  timeMs: 3000},
   '4': {iters: 100000, timeMs: 6000} // 가장 어려움, 최대 6초
@@ -333,6 +365,7 @@ let game, selected = -1, hintCell = -1;
 let thinking = false, lastPlayerWinRate = null;
 let gameType = 'play', mode = 'ai', level = '2', humanColor = BLACK;
 const stoneEls = new Map();
+const IS_HOVER = window.matchMedia && window.matchMedia('(hover: hover)').matches; // PC/모바일 구분
 
 function newGame(){ return {board:new Int8Array(CELLS), plies:0, toMove:BLACK, moves:[], result:null, stones:[], nextId:1}; }
 
@@ -344,7 +377,6 @@ function playMove(game, cell){
   
   const rec = {cell, player, pulls};
   
-  // 시각적 돌(Stone) 객체 갱신 및 벽 관통(Torus) 감지
   for(const p of pulls){
     const st = game.stones.find(s => s.cell === p.from);
     if(st){
@@ -376,22 +408,32 @@ function undoMove(game){
   const idx = game.stones.findIndex(s => s.id === rec.stoneId); 
   if(idx >= 0) game.stones.splice(idx,1);
   game.plies--; game.toMove = rec.player; game.result = null;
-  document.querySelectorAll('.clone').forEach(e => e.remove()); // 남은 애니메이션 클론 청소
+  document.querySelectorAll('.clone').forEach(e => e.remove()); 
 }
 
 function myTurn(){ return !game.result && !thinking && (mode==='local' || game.toMove===humanColor); }
 
-// DOM Grid 초기화
-const grid = $('grid');
-for(let i=0; i<CELLS; i++){
-  const d = document.createElement('div'); d.className = 'cell'; d.dataset.cell = i;
-  d.addEventListener('click', () => {
-    if(!myTurn() || game.board[i]!==0) return;
-    if(selected===i){ selected=-1; commit(i); } else { selected=i; showPreview(i); }
-  });
-  d.addEventListener('mouseenter', () => { if(selected<0 && myTurn() && game.board[i]===0) showPreview(i); });
-  d.addEventListener('mouseleave', () => { if(selected<0) clearPreview(); });
-  grid.appendChild(d);
+// UI 보드 생성 (크기 변경 시마다 호출됨)
+function buildUIGrid() {
+  const grid = $('grid');
+  grid.innerHTML = '';
+  
+  // CSS 그리드 및 사이즈 변수 동기화
+  $('board').style.setProperty('--n', N);
+  grid.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+  grid.style.gridTemplateRows = `repeat(${N}, 1fr)`;
+  
+  for(let i=0; i<CELLS; i++){
+    const d = document.createElement('div'); d.className = 'cell'; d.dataset.cell = i;
+    d.addEventListener('click', () => {
+      if(!myTurn() || game.board[i]!==0) return;
+      if(IS_HOVER) { selected = -1; commit(i); return; } // PC는 1번 클릭
+      if(selected===i){ selected=-1; commit(i); } else { selected=i; showPreview(i); } // 모바일은 2번 클릭
+    });
+    d.addEventListener('mouseenter', () => { if(selected<0 && myTurn() && game.board[i]===0) showPreview(i); });
+    d.addEventListener('mouseleave', () => { if(selected<0) clearPreview(); });
+    grid.appendChild(d);
+  }
 }
 
 // 프리뷰 및 렌더링
@@ -416,7 +458,6 @@ function commit(cell){
   render(); maybeAI();
 }
 
-// 화면 동기화 (Torus 애니메이션 포함)
 function syncStones(){
   const layer = $('stones'); const live = new Set();
   
@@ -430,31 +471,28 @@ function syncStones(){
     
     // 벽 관통(Torus) 애니메이션 처리
     if(s.wrap){
-      // 1. 원본 돌을 화면 밖 물리적 위치로 이동
       el.style.left = (s.wrap.startX + s.wrap.dx)*100/N + '%';
       el.style.top = (s.wrap.startY + s.wrap.dy)*100/N + '%';
       
       if(!s.cloneHandled){
         s.cloneHandled = true;
-        // 2. 반대편 화면 밖에서 날아오는 복제본(Clone) 생성
         const clone = document.createElement('div');
         clone.className = 'clone ' + (s.color===1?'black':'white'); clone.innerHTML = '<div class="disc"></div>';
         clone.style.left = (s.wrap.toX - s.wrap.dx)*100/N + '%';
         clone.style.top = (s.wrap.toY - s.wrap.dy)*100/N + '%';
         layer.appendChild(clone);
         
-        clone.offsetHeight; // Reflow 강제
-        // 3. 복제본을 최종 위치로 이동
+        clone.offsetHeight; 
         clone.style.left = (s.wrap.toX)*100/N + '%';
         clone.style.top = (s.wrap.toY)*100/N + '%';
         
         setTimeout(() => {
           clone.remove(); s.wrap = null; s.cloneHandled = false;
-          el.style.transition = 'none'; // 애니메이션 없이 순간이동
+          el.style.transition = 'none';
           el.style.left = (s.cell%N)*100/N + '%';
           el.style.top = Math.floor(s.cell/N)*100/N + '%';
           el.offsetHeight;
-          el.style.transition = ''; // 복구
+          el.style.transition = ''; 
         }, 350);
       }
     } else {
@@ -476,7 +514,6 @@ function syncStones(){
 function render(){
   syncStones();
   
-  // 상태 텍스트
   if(game.result){
     const winnerName = game.result.winner === BLACK ? '흑' : '백';
     $('turnBox').textContent = game.result.resigned ? `${winnerName} 승리 (기권)` : `${winnerName} 승리!`;
@@ -493,12 +530,11 @@ function render(){
     }
   }
   
-  $('placedCount').textContent = `${game.plies} / 80`;
+  $('placedCount').textContent = `${game.plies} / ${MAX_PLIES}`;
   const gb = groupSizes(game.board, BLACK), gw = groupSizes(game.board, WHITE);
   $('scoreB').textContent = gb[0] || 0;
   $('scoreW').textContent = gw[0] || 0;
 
-  // 버튼 활성화 상태
   $('undoBtn').disabled = thinking || game.moves.length === 0;
   $('hintBtn').disabled = thinking || game.result || !myTurn();
   $('resignBtn').disabled = !!game.result;
@@ -513,14 +549,12 @@ function maybeAI(){
   setTimeout(() => {
     const r = mctsChoose(game.board, game.plies, game.toMove, LEVELS[level]);
     thinking = false;
-    // AI의 승률이 r.winrate 이므로, 플레이어의 승률은 (1 - r.winrate)
     lastPlayerWinRate = Math.max(0, Math.min(100, Math.round((1 - r.winrate) * 100)));
     playMove(game, r.move);
     render();
   }, 50);
 }
 
-// 훈련 모드 힌트 보기 (가장 어려운 4단계 AI가 플레이어 대신 수를 찾아줌)
 function showHint(){
   if(thinking || game.result || !myTurn() || gameType === 'play') return;
   thinking = true; $('winrateBox').textContent = '최적의 수 찾는 중...'; render();
@@ -529,7 +563,6 @@ function showHint(){
     const r = mctsChoose(game.board, game.plies, game.toMove, LEVELS['4']);
     hintCell = r.move;
     thinking = false;
-    // 이 때는 플레이어 입장에서 찾은 것이므로 r.winrate 가 플레이어 승률
     lastPlayerWinRate = Math.round(r.winrate * 100);
     render();
   }, 50);
@@ -544,7 +577,7 @@ function startGame(){
 function undo(){
   if(thinking || gameType === 'play' || game.moves.length === 0) return;
   undoMove(game);
-  if(mode==='ai' && game.toMove!==humanColor && game.moves.length) undoMove(game); // AI턴도 같이 무르기
+  if(mode==='ai' && game.toMove!==humanColor && game.moves.length) undoMove(game);
   selected = -1; hintCell = -1; lastPlayerWinRate = null; clearPreview(); render();
 }
 
@@ -553,7 +586,6 @@ function resign(){
   if(confirm("기권하시겠습니까?")){ game.result = { winner: 3 - game.toMove, resigned: true }; render(); }
 }
 
-// UI 이벤트 리스너 바인딩
 function bindSeg(id, onPick){
   const el = $(id);
   el.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
@@ -562,11 +594,9 @@ function bindSeg(id, onPick){
   }));
 }
 
-bindSeg('typeSeg', v => { 
-  gameType = v; 
-  document.body.className = v + '-mode'; 
-  lastPlayerWinRate = null; hintCell = -1; render(); 
-});
+// 모드 제어 바인딩
+bindSeg('sizeSeg', v => { initBoardData(Number(v)); buildUIGrid(); startGame(); });
+bindSeg('typeSeg', v => { gameType = v; document.body.className = v + '-mode'; lastPlayerWinRate = null; hintCell = -1; render(); });
 bindSeg('modeSeg', v => { mode = v; startGame(); });
 bindSeg('levelSeg', v => { level = v; });
 bindSeg('colorSeg', v => { humanColor = Number(v); startGame(); });
@@ -576,7 +606,9 @@ $('undoBtn').addEventListener('click', undo);
 $('hintBtn').addEventListener('click', showHint);
 $('resignBtn').addEventListener('click', resign);
 
-// 게임 시작
+// 최초 초기화 및 게임 시작
+initBoardData(9);
+buildUIGrid();
 startGame();
 
 </script>
