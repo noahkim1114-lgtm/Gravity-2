@@ -123,8 +123,15 @@
   .page b { color: #fff; }
   .page .key { color: var(--accent); font-weight: 700; }
   
-  .ex-container { margin: 14px 0; display: flex; justify-content: center; gap: 10px; width: 100%; }
-  .ex-container > div { flex: 1; min-width: 0; }
+  .cap { margin: 6px 0 0; font-size: 13px; color: var(--accent); text-align: center; line-height: 1.4; }
+  .demo { --n: 7; position: relative; width: 100%; aspect-ratio: 1; margin: 0 auto; background: #6a6e73; border: 3px solid #4a4d50; border-radius: 4px; overflow: hidden; }
+  .demo .dgrid { position: absolute; inset: 0; display: grid; }
+  .demo .dcell { border: 1px solid rgba(0,0,0,0.25); }
+  .demo .dcell.target { background: rgba(227,176,75,0.35); animation: pulse 0.9s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: inset 0 0 0 2px var(--accent); } 50% { box-shadow: inset 0 0 0 4px var(--accent); } }
+  .demo .layer { transition: opacity 0.4s; }
+  .ex-container { margin: 14px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; width: 100%; }
+  .ex-container > div { flex: 1; min-width: 180px; }
   .ex-container.single > div { max-width: 340px; }
   
   .modal-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
@@ -212,70 +219,54 @@
 <div id="tutorialModal" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
-      <h2>Gravity 배우기</h2>
+      <h2>Gravity 규칙</h2>
       <button id="closeModalBtn">✕</button>
     </div>
     
     <div class="modal-body">
-      <!-- 1페이지: 목표 -->
       <div class="page active" id="page1">
-        <h3>1. 목표는 하나, 가장 큰 무리</h3>
-        <p>흑과 백이 번갈아 빈 칸에 돌을 하나씩 놓습니다. 게임이 끝났을 때 <span class="key">내 돌로 이루어진 가장 큰 무리</span>가 상대보다 크면 이깁니다.</p>
-        <p><b>무리</b>란 상·하·좌·우로 딱 붙어 이어진 같은 색 돌의 덩어리입니다. <b>대각선으로만 닿은 돌은 다른 무리</b>입니다.</p>
+        <h3>목표</h3>
+        <p>흑과 백이 번갈아 빈 칸에 돌을 하나씩 놓는다.</p>
+        <p>끝났을 때 <span class="key">가장 큰 무리</span>가 더 큰 쪽이 이긴다.</p>
+        <p>무리는 상하좌우로 붙어 이어진 같은 색 돌. <b>대각선은 이어진 게 아니다.</b></p>
         <div class="ex-container single" id="ex1"></div>
-        <p class="note">각자 가장 큰 무리 하나씩만 비교합니다. 작은 무리는 몇 개가 있어도 점수가 아닙니다.</p>
-      </div>
-      
-      <!-- 2페이지: 중력 -->
-      <div class="page" id="page2">
-        <h3>2. 놓으면 끌려온다</h3>
-        <p>돌을 놓는 순간 그 돌이 <span class="key">중력</span>을 냅니다. 위·아래·왼쪽·오른쪽 네 방향에서 각각 <b>가장 가까운 돌 하나</b>가 빈 칸을 미끄러져 새 돌 옆에 와서 붙습니다.</p>
-        <ul>
-          <li>내 돌이든 상대 돌이든 <b>색과 상관없이</b> 끌려옵니다.</li>
-          <li>이미 옆에 붙어 있는 돌은 움직이지 않습니다.</li>
-          <li>그래서 한 수에 <b>최대 4개</b>까지 움직입니다.</li>
-        </ul>
-        <div class="ex-container single" id="ex2"></div>
-        <p class="note">놓기 전에 빈 칸에 마우스를 올리면(휴대폰은 한 번 누르면) 어떤 돌이 어디로 올지 미리 보입니다.</p>
-      </div>
-      
-      <!-- 3페이지: 벽 너머 -->
-      <div class="page" id="page3">
-        <h3>3. 이 판에는 끝이 없다</h3>
-        <p>왼쪽 끝을 지나면 <b>오른쪽 끝으로</b>, 위쪽 끝을 지나면 <b>아래쪽 끝으로</b> 이어집니다. 그래서 두 가지가 벽을 넘습니다.</p>
-        <ul>
-          <li><b>중력</b>: 어떤 방향에 돌이 없어 보여도, 벽 너머에 있으면 그 돌이 끌려옵니다.</li>
-          <li><b>무리</b>: 왼쪽 끝 돌과 오른쪽 끝 돌은 서로 붙어 있는 것으로 칩니다.</li>
-        </ul>
-        <div class="ex-container" id="ex3"></div>
-        <p class="note">한 줄에 돌이 하나뿐이면 양쪽 방향에서 다 그 돌이 "가장 가까운 돌"이 됩니다. 이때는 <b>더 가까운 쪽 길</b>로 한 번만 옵니다.</p>
-      </div>
-      
-      <!-- 4페이지: 끝과 승패 -->
-      <div class="page" id="page4">
-        <h3>4. 끝나는 순간과 승패</h3>
-        <p><span class="key">빈 칸이 딱 하나 남으면</span> 게임이 끝납니다. 그래서 흑과 백은 항상 같은 수의 돌을 놓습니다.</p>
-        <p>가장 큰 무리가 더 큰 쪽이 이깁니다. 같으면 <b>두 번째로 큰 무리</b>를 비교하고, 그것도 같으면 세 번째… 이렇게 내려갑니다.</p>
-        <div class="ex-container" id="ex4"></div>
-        <p class="note">전부 똑같으면 나중에 둔 <b>백이 이깁니다</b>. 먼저 두는 이점을 상쇄하기 위한 규칙입니다.</p>
       </div>
 
-      <!-- 5페이지: 팁 -->
-      <div class="page" id="page5">
-        <h3>5. 첫 판을 위한 팁</h3>
+      <div class="page" id="page2">
+        <h3>중력</h3>
+        <p>돌을 놓으면 그 돌이 중력을 낸다. 상·하·좌·우 각 방향에서 <span class="key">가장 가까운 돌 하나</span>가 빈 칸을 미끄러져 새 돌 옆에 붙는다.</p>
         <ul>
-          <li><b>두껍게 만드세요.</b> 한 줄로 길게 이어진 무리는 가운데 돌 하나만 끌려나가도 두 동강 납니다. 2×2로 뭉친 무리는 한 수로는 못 쪼갭니다.</li>
-          <li><b>상대 무리의 이음새를 노리세요.</b> 그 돌까지 빈 칸이 쭉 뚫려 있으면, 그 줄 끝에 돌을 놓아 끌어낼 수 있습니다.</li>
-          <li><b>통로를 막으세요.</b> 끌려오는 건 가장 가까운 돌이므로, 내 이음새 앞에 돌이 하나 서 있으면(상대 돌이라도) 그 돌이 대신 끌려갑니다.</li>
-          <li><b>후반엔 아무것도 안 움직입니다.</b> 돌이 다 붙으면 그냥 빈칸 채우기입니다. 중반부터 내 무리 옆에 빈 칸을 남겨 두세요.</li>
+          <li>색은 상관없다.</li>
+          <li>이미 붙어 있는 돌은 그대로.</li>
+          <li>한 수에 최대 4개가 움직인다.</li>
         </ul>
-        <div class="ex-container single" id="ex5"></div>
+        <div class="ex-container single" id="demo2"></div>
+        <p class="note">놓기 전에 빈 칸에 마우스를 올리면(휴대폰은 한 번 누르면) 미리 보인다.</p>
+      </div>
+
+      <div class="page" id="page3">
+        <h3>벽 너머</h3>
+        <p>이 판은 끝이 없다. 왼쪽 끝을 지나면 오른쪽 끝, 위쪽 끝을 지나면 아래쪽 끝이다.</p>
+        <ul>
+          <li><b>중력도 벽을 넘는다.</b> 어떤 방향에 돌이 없어 보여도 벽 너머에 있으면 끌려온다.</li>
+          <li><b>무리도 벽을 넘는다.</b> 왼쪽 끝 돌과 오른쪽 끝 돌은 붙어 있는 것이다.</li>
+        </ul>
+        <div class="ex-container"><div id="demo3"></div><div id="ex3b"></div></div>
+        <p class="note">한 줄에 돌이 하나뿐이면 양쪽에서 다 가장 가까운 돌이다. 이때는 가까운 쪽 길로 한 번만 온다.</p>
+      </div>
+
+      <div class="page" id="page4">
+        <h3>끝과 승패</h3>
+        <p><span class="key">빈 칸이 하나 남으면</span> 끝난다. 흑과 백은 같은 수의 돌을 놓는다.</p>
+        <p>가장 큰 무리가 큰 쪽이 이긴다. 같으면 두 번째 무리, 그다음 세 번째… 순서로 비교한다.</p>
+        <div class="ex-container"><div id="ex4a"></div><div id="ex4b"></div></div>
+        <p class="note">전부 같으면 백(후공)이 이긴다.</p>
       </div>
     </div>
     
     <div class="modal-footer">
       <button class="btn" id="prevPageBtn" disabled>이전</button>
-      <span class="page-indicator" id="pageIndicator">1 / 5</span>
+      <span class="page-indicator" id="pageIndicator">1 / 4</span>
       <button class="btn primary" id="nextPageBtn">다음</button>
     </div>
   </div>
@@ -283,11 +274,11 @@
 
 <script>
 /* =====================================================================
-   튜토리얼 그림 생성기
+   튜토리얼: 정지 그림(SVG)과 움직이는 시연(mini board)
    ===================================================================== */
 function drawSvg(containerId, o) {
   const n = o.n || 7, S = 10, W = n * S;
-  let svg = `<svg viewBox="-1 -1 ${W+2} ${W+16}" width="100%" style="display:block; margin:0 auto;">
+  let svg = `<svg viewBox="-1 -1 ${W+2} ${W+2}" width="100%" style="display:block; margin:0 auto;">
   <defs>
     <radialGradient id="bg" cx="35%" cy="30%" r="60%"><stop offset="0%" stop-color="#555"/><stop offset="100%" stop-color="#000"/></radialGradient>
     <radialGradient id="wg" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#bbb"/></radialGradient>
@@ -297,27 +288,87 @@ function drawSvg(containerId, o) {
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
     svg += `<rect x="${c*S}" y="${r*S}" width="${S}" height="${S}" stroke="rgba(0,0,0,0.25)" stroke-width="0.4" fill="none"/>`;
   (o.marks || []).forEach(m => {
-    svg += `<rect x="${m.x*S+0.6}" y="${m.y*S+0.6}" width="${S-1.2}" height="${S-1.2}" fill="${m.fill || 'rgba(227,176,75,0.28)'}" stroke="${m.stroke || '#E3B04B'}" stroke-width="1" ${m.dash ? 'stroke-dasharray="2 1.5"' : ''}/>`;
+    svg += `<rect x="${m.x*S+0.6}" y="${m.y*S+0.6}" width="${S-1.2}" height="${S-1.2}" fill="rgba(227,176,75,0.28)" stroke="#E3B04B" stroke-width="1"/>`;
   });
   (o.stones || []).forEach(s => {
     const fill = s.c === 1 ? 'url(#bg)' : 'url(#wg)';
-    svg += `<circle cx="${s.x*S+5}" cy="${s.y*S+5}" r="3.9" fill="${fill}" opacity="${s.ghost ? 0.28 : 1}"${s.ghost ? ' stroke="#E3B04B" stroke-width="0.6" stroke-dasharray="1.5 1"' : ''}/>`;
+    svg += `<circle cx="${s.x*S+5}" cy="${s.y*S+5}" r="3.9" fill="${fill}"/>`;
     if (s.label !== undefined) svg += `<text x="${s.x*S+5}" y="${s.y*S+6.6}" font-size="4.6" font-family="sans-serif" font-weight="bold" fill="${s.c===1?'#fff':'#000'}" text-anchor="middle">${s.label}</text>`;
   });
   (o.arrows || []).forEach(a => {
     svg += `<line x1="${a.x1*S}" y1="${a.y1*S}" x2="${a.x2*S}" y2="${a.y2*S}" stroke="#E3B04B" stroke-width="1.3" marker-end="url(#arrow)"/>`;
   });
-  (o.tags || []).forEach(t => {
-    svg += `<text x="${t.x*S}" y="${t.y*S}" font-size="4.2" font-family="sans-serif" font-weight="bold" fill="${t.color || '#E3B04B'}" text-anchor="${t.anchor || 'middle'}">${t.txt}</text>`;
-  });
-  if (o.caption) svg += `<text x="${W/2}" y="${W+10.5}" font-size="5.2" font-family="sans-serif" font-weight="bold" fill="#E3B04B" text-anchor="middle">${o.caption}</text>`;
   svg += `</svg>`;
   const el = document.getElementById(containerId);
-  if (el) el.innerHTML = svg;
+  if (!el) return;
+  el.innerHTML = svg;
+  if (o.caption) { const p = document.createElement('p'); p.className = 'cap'; p.textContent = o.caption; el.appendChild(p); }
 }
 
-function initTutorialImages() {
-  // 1. 무리: 흑 4개 무리(번호), 대각선으로만 닿은 흑 1개, 백 3개 무리
+// 실제 게임과 같은 규칙(pullsFor)으로 돌이 끌려오는 모습을 반복 재생하는 작은 판
+function makeDemo(containerId, n, initial, place, caption) {
+  const host = document.getElementById(containerId); host.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'demo'; box.style.setProperty('--n', n);
+  const grid = document.createElement('div'); grid.className = 'dgrid';
+  grid.style.gridTemplateColumns = `repeat(${n}, 1fr)`; grid.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+  const cells = [];
+  for (let i = 0; i < n * n; i++) { const d = document.createElement('div'); d.className = 'dcell'; grid.appendChild(d); cells.push(d); }
+  const layer = document.createElement('div'); layer.className = 'layer';
+  box.appendChild(grid); box.appendChild(layer); host.appendChild(box);
+  if (caption) { const p = document.createElement('p'); p.className = 'cap'; p.textContent = caption; host.appendChild(p); }
+
+  const T = buildTables(n); const target = place.y * n + place.x;
+  let token = 0, timers = [];
+  const later = (fn, ms) => { const t = token; timers.push(setTimeout(() => { if (t === token) fn(); }, ms)); };
+  const put = (el, x, y) => { el.style.left = x * 100 / n + '%'; el.style.top = y * 100 / n + '%'; };
+  const mk = (cls, x, y) => { const el = document.createElement('div'); el.className = cls; el.innerHTML = '<div class="disc"></div>'; put(el, x, y); layer.appendChild(el); return el; };
+
+  function reset() {
+    layer.innerHTML = ''; layer.style.opacity = '1';
+    const board = new Int8Array(n * n), stones = [];
+    for (const s of initial) { board[s.y * n + s.x] = s.c; stones.push({ x: s.x, y: s.y, c: s.c, el: mk('stone ' + (s.c === 1 ? 'black' : 'white'), s.x, s.y) }); }
+    cells.forEach((c, i) => c.classList.toggle('target', i === target));
+    return { board, stones };
+  }
+  function cycle() {
+    const st = reset();
+    later(() => {
+      cells[target].classList.remove('target');
+      const pulls = pullsFor(st.board, target, T);
+      st.board[target] = place.c;
+      for (const p of pulls) { st.board[p.to] = st.board[p.from]; st.board[p.from] = 0; }
+      const el = mk('stone new ' + (place.c === 1 ? 'black' : 'white'), place.x, place.y);
+      requestAnimationFrame(() => el.classList.remove('new'));
+      for (const p of pulls) {
+        const s = st.stones.find(q => q.y * n + q.x === p.from); if (!s) continue;
+        const tx = p.to % n, ty = Math.floor(p.to / n);
+        if (s.x + p.dx === tx && s.y + p.dy === ty) { put(s.el, tx, ty); }
+        else { // 벽을 넘는 이동: 원본은 밖으로 나가고, 복제본이 반대쪽에서 들어온다
+          put(s.el, s.x + p.dx, s.y + p.dy);
+          const cl = mk('clone ' + (s.c === 1 ? 'black' : 'white'), tx - p.dx, ty - p.dy);
+          cl.offsetHeight; put(cl, tx, ty);
+          later(() => { cl.remove(); s.el.style.transition = 'none'; put(s.el, tx, ty); s.el.offsetHeight; s.el.style.transition = ''; }, 1100);
+        }
+        s.x = tx; s.y = ty;
+      }
+    }, 1000);
+    later(() => { layer.style.opacity = '0'; }, 3800);
+    later(cycle, 4400);
+  }
+  const clear = () => { token++; timers.forEach(clearTimeout); timers = []; };
+  reset();
+  return { start() { clear(); cycle(); }, stop() { clear(); reset(); } };
+}
+
+const demos = {};
+function showDemosFor(page) {
+  for (const k in demos) demos[k].forEach(d => d.stop());
+  (demos[page] || []).forEach(d => d.start());
+}
+function stopDemos() { for (const k in demos) demos[k].forEach(d => d.stop()); }
+
+function initTutorial() {
+  // 1. 무리: 흑 4개 무리(번호), 대각선으로만 닿은 흑 1개(✕), 백 3개 무리
   drawSvg('ex1', {
     stones: [
       {x:1,y:1,c:1,label:1},{x:2,y:1,c:1,label:2},{x:2,y:2,c:1,label:3},{x:3,y:2,c:1,label:4},
@@ -325,66 +376,38 @@ function initTutorialImages() {
       {x:5,y:5,c:2,label:1},{x:5,y:4,c:2,label:2},{x:6,y:5,c:2,label:3}
     ],
     marks: [{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:3,y:2}],
-    tags: [{x:4.5,y:4.9,txt:'대각선은 안 이어짐'}],
-    caption: '흑 최대 무리 4  vs  백 최대 무리 3'
+    caption: '흑 최대 무리 4, 백 최대 무리 3. ✕는 대각선이라 따로 센다.'
   });
 
-  // 2. 중력: (3,3)에 흑을 놓음. 위 백(3,0)→(3,2), 아래 흑(3,5)→(3,4), 왼쪽 흑(0,3)→(2,3), 오른쪽 (4,3)은 이미 붙어 있어 그대로
-  drawSvg('ex2', {
-    stones: [
-      {x:3,y:3,c:1},
-      {x:3,y:0,c:2,ghost:true},{x:3,y:2,c:2},
-      {x:3,y:5,c:1,ghost:true},{x:3,y:4,c:1},
-      {x:0,y:3,c:1,ghost:true},{x:2,y:3,c:1},
-      {x:4,y:3,c:2}
-    ],
-    marks: [{x:3,y:3}],
-    arrows: [{x1:3.5,y1:0.9,x2:3.5,y2:1.7},{x1:3.5,y1:5.1,x2:3.5,y2:4.9},{x1:0.9,y1:3.5,x2:1.7,y2:3.5}],
-    tags: [{x:5.5,y:3.7,txt:'그대로',anchor:'start'},{x:3.5,y:6.9,txt:'흐린 돌 = 원래 자리'}],
-    caption: '새 돌(노란 칸) 쪽으로 가장 가까운 돌들이 미끄러진다'
-  });
+  // 2. 중력 시연: (3,3)에 흑. 위 백·아래 흑·왼쪽 흑이 끌려오고, 오른쪽 백은 붙어 있어 그대로
+  demos[2] = [makeDemo('demo2', 7,
+    [{x:3,y:0,c:2},{x:3,y:5,c:1},{x:0,y:3,c:1},{x:4,y:3,c:2}],
+    {x:3,y:3,c:1},
+    '노란 칸에 흑을 놓는다. 오른쪽 백돌은 이미 붙어 있어 그대로.')];
 
-  // 3. 벽 너머: 왼쪽 그림 - (1,3)에 흑, 백(5,3)이 오른쪽 벽을 지나 (0,3)으로 / 오른쪽 그림 - (0,2)와 (6,2)의 흑은 한 무리
-  const ex3 = document.getElementById('ex3');
-  ex3.innerHTML = '<div id="ex3a"></div><div id="ex3b"></div>';
-  drawSvg('ex3a', {
-    stones: [{x:1,y:3,c:1},{x:5,y:3,c:2,ghost:true},{x:0,y:3,c:2}],
-    marks: [{x:1,y:3}],
-    arrows: [{x1:5.9,y1:3.5,x2:7.2,y2:3.5},{x1:-0.9,y1:3.5,x2:-0.1,y2:3.5}],
-    caption: '오른쪽 끝을 지나 왼쪽 끝으로 들어온다'
-  });
+  // 3. 벽 너머 시연: (1,3)에 흑을 놓으면 (5,3)의 백이 오른쪽 끝을 지나 (0,3)으로 들어온다
+  demos[3] = [makeDemo('demo3', 7,
+    [{x:5,y:3,c:2}],
+    {x:1,y:3,c:1},
+    '오른쪽 끝을 지나 왼쪽 끝으로 들어온다.')];
   drawSvg('ex3b', {
     stones: [{x:6,y:2,c:1,label:1},{x:0,y:2,c:1,label:2},{x:1,y:2,c:1,label:3}],
     marks: [{x:6,y:2},{x:0,y:2},{x:1,y:2}],
-    arrows: [{x1:6.9,y1:2.5,x2:7.3,y2:2.5},{x1:-0.5,y1:2.5,x2:-0.1,y2:2.5}],
-    caption: '양 끝의 돌은 붙어 있다 (3개짜리 한 무리)'
+    arrows: [{x1:6.6,y1:2.5,x2:7.05,y2:2.5},{x1:-0.05,y1:2.5,x2:0.45,y2:2.5}],
+    caption: '양 끝의 돌은 붙어 있다. 3개짜리 한 무리.'
   });
 
   // 4. 승패: 왼쪽 - 최대 3:3 동점, 두 번째 2:1 → 흑 / 오른쪽 - 완전 동점 → 백
-  const ex4 = document.getElementById('ex4');
-  ex4.innerHTML = '<div id="ex4a"></div><div id="ex4b"></div>';
   const bigB = [{x:1,y:1,c:1,label:1},{x:2,y:1,c:1,label:2},{x:2,y:2,c:1,label:3}];
   const bigW = [{x:4,y:1,c:2,label:1},{x:5,y:1,c:2,label:2},{x:5,y:2,c:2,label:3}];
   drawSvg('ex4a', {
     stones: [...bigB, ...bigW, {x:1,y:5,c:1,label:1},{x:2,y:5,c:1,label:2},{x:5,y:5,c:2,label:1}],
     marks: [{x:1,y:5},{x:2,y:5},{x:5,y:5}],
-    caption: '최대 3:3 → 두 번째 2:1 → 흑 승'
+    caption: '최대 무리 3:3 → 두 번째 무리 2:1 → 흑 승'
   });
   drawSvg('ex4b', {
     stones: [...bigB, ...bigW],
     caption: '전부 같음 → 백 승'
-  });
-
-  // 5. 팁: 얇은 줄 끊기. 흑 (1..5,3) 한 줄, 백을 (3,0)에 놓으면 (3,3)이 (3,1)로 끌려나가 2·2·1로 갈라짐
-  drawSvg('ex5', {
-    stones: [
-      {x:1,y:3,c:1},{x:2,y:3,c:1},{x:3,y:3,c:1,ghost:true},{x:4,y:3,c:1},{x:5,y:3,c:1},
-      {x:3,y:0,c:2},{x:3,y:1,c:1}
-    ],
-    marks: [{x:3,y:0},{x:3,y:3,fill:'rgba(0,0,0,0)',dash:true}],
-    arrows: [{x1:3.5,y1:2.9,x2:3.5,y2:2.1}],
-    tags: [{x:3.5,y:5.4,txt:'5개 무리 → 2 · 2 · 1로 갈라짐'}],
-    caption: '한 줄 무리는 이음새 하나로 끊긴다'
   });
 }
 
@@ -393,50 +416,57 @@ function initTutorialImages() {
    ===================================================================== */
 let N = 9, CELLS = 81, MAX_PLIES = 80;
 const BLACK = 1, WHITE = 2;
-let ADJ = [], RAYS = [];
+let ADJ = [], RAYS = [], TB = null;
 const DIRS = [[-1,0],[1,0],[0,-1],[0,1]]; // [dy(row), dx(col)] : 위, 아래, 왼쪽, 오른쪽
-const wrap = (x) => ((x % N) + N) % N;
 
 const MAX_POSSIBLE_CELLS = 121;
 const _seen = new Uint8Array(MAX_POSSIBLE_CELLS), _stack = new Int8Array(MAX_POSSIBLE_CELLS), _emp = new Int8Array(MAX_POSSIBLE_CELLS);
 
-function initBoardData(size) {
-  N = size; CELLS = N * N; MAX_PLIES = CELLS - 1;
-  ADJ = []; RAYS = [];
-  for(let cell=0; cell<CELLS; cell++){
-    const r = Math.floor(cell/N), c = cell%N;
+// 토러스 판의 이웃/방향 표. size×size 판 하나에 대한 표를 만든다 (튜토리얼 시연판도 같은 함수를 쓴다)
+function buildTables(size) {
+  const w = x => ((x % size) + size) % size;
+  const A = [], R = [];
+  for(let cell=0; cell<size*size; cell++){
+    const r = Math.floor(cell/size), c = cell%size;
     const adj = [], rays = [];
     for(const [dr,dc] of DIRS){
-      adj.push(wrap(r+dr)*N + wrap(c+dc));
-      // 토러스: 한 방향으로 N-1칸까지 (거리 1 = 바로 옆 칸부터) 한 바퀴 직전까지 본다
+      adj.push(w(r+dr)*size + w(c+dc));
+      // 한 방향으로 한 바퀴 직전(size-1칸)까지 본다. 거리 1 = 바로 옆 칸
       const ray = [];
-      for(let k=1; k<N; k++){ ray.push(wrap(r+dr*k)*N + wrap(c+dc*k)); }
+      for(let k=1; k<size; k++){ ray.push(w(r+dr*k)*size + w(c+dc*k)); }
       rays.push(ray);
     }
-    ADJ.push(adj); RAYS.push(rays);
+    A.push(adj); R.push(rays);
   }
+  return { N: size, ADJ: A, RAYS: R };
+}
+
+function initBoardData(size) {
+  N = size; CELLS = N * N; MAX_PLIES = CELLS - 1;
+  TB = buildTables(size); ADJ = TB.ADJ; RAYS = TB.RAYS;
 }
 
 // 한 방향으로 가장 가까운 돌: {sq, dist} 또는 null
-function nearestInDir(board, cell, d){
-  const ray = RAYS[cell][d];
+function nearestInDir(board, cell, d, T){
+  const ray = T.RAYS[cell][d];
   for(let i=0; i<ray.length; i++){ if(board[ray[i]]!==0) return {sq: ray[i], dist: i+1}; }
   return null;
 }
 
 // 규칙: 상하좌우 각 방향에서 가장 가까운 돌이 (벽을 넘어서라도) 새 돌 옆으로 끌려온다.
 // 한 줄에 돌이 하나뿐이면 양쪽 방향이 같은 돌을 가리키므로, 더 가까운 쪽 길로 한 번만 온다.
-function pullsFor(board, cell){
+function pullsFor(board, cell, T){
+  T = T || TB;
   const out=[];
   for(const [dA, dB] of [[0,1],[2,3]]){ // 세로축(위/아래), 가로축(왼쪽/오른쪽)
-    const fa = nearestInDir(board, cell, dA), fb = nearestInDir(board, cell, dB);
+    const fa = nearestInDir(board, cell, dA, T), fb = nearestInDir(board, cell, dB, T);
     const picks = [];
     if(fa && fb && fa.sq === fb.sq){ picks.push(fa.dist <= fb.dist ? {f:fa, d:dA} : {f:fb, d:dB}); }
     else { if(fa) picks.push({f:fa, d:dA}); if(fb) picks.push({f:fb, d:dB}); }
     for(const {f, d} of picks){
       if(f.dist < 2) continue; // 이미 옆에 붙어 있음
       const steps = f.dist - 1; // 끌려오는 칸 수 (스캔 방향의 반대로 이동)
-      out.push({ from: f.sq, to: ADJ[cell][d], dx: -DIRS[d][1] * steps, dy: -DIRS[d][0] * steps });
+      out.push({ from: f.sq, to: T.ADJ[cell][d], dx: -DIRS[d][1] * steps, dy: -DIRS[d][0] * steps });
     }
   }
   return out;
@@ -824,7 +854,7 @@ $('resignBtn').addEventListener('click', resign);
 
 /* 튜토리얼 모달 로직 */
 let currentPage = 1;
-const totalPages = 5;
+const totalPages = 4;
 
 function updateModal(){
   for(let i=1; i<=totalPages; i++){
@@ -833,6 +863,7 @@ function updateModal(){
   $('pageIndicator').textContent = `${currentPage} / ${totalPages}`;
   $('prevPageBtn').disabled = (currentPage === 1);
   $('nextPageBtn').textContent = (currentPage === totalPages) ? "닫기" : "다음";
+  showDemosFor(currentPage);
 }
 
 $('tutorialBtn').addEventListener('click', () => {
@@ -841,7 +872,7 @@ $('tutorialBtn').addEventListener('click', () => {
   $('tutorialModal').classList.add('show');
 });
 
-$('closeModalBtn').addEventListener('click', () => { $('tutorialModal').classList.remove('show'); });
+$('closeModalBtn').addEventListener('click', () => { $('tutorialModal').classList.remove('show'); stopDemos(); });
 
 $('prevPageBtn').addEventListener('click', () => {
   if(currentPage > 1) { currentPage--; updateModal(); }
@@ -849,12 +880,12 @@ $('prevPageBtn').addEventListener('click', () => {
 
 $('nextPageBtn').addEventListener('click', () => {
   if(currentPage < totalPages) { currentPage++; updateModal(); }
-  else { $('tutorialModal').classList.remove('show'); } 
+  else { $('tutorialModal').classList.remove('show'); stopDemos(); } 
 });
 
 initBoardData(9);
 buildUIGrid();
-initTutorialImages(); 
+initTutorial(); 
 startGame();
 
 </script>
