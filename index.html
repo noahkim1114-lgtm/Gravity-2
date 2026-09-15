@@ -24,7 +24,7 @@
   }
   button { font: inherit; color: inherit; cursor: pointer; outline: none; }
   
-  .app { max-width: 1040px; margin: 0 auto; padding: 20px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  .app { max-width: 1040px; margin: 0 auto; padding: 20px 20px 80px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
   
   .board-col { flex: 1.4; min-width: 360px; display: flex; flex-direction: column; gap: 16px; margin-top: 30px; }
   .panel-col { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 24px; }
@@ -91,6 +91,39 @@
   .seg button.on { background: #333; color: #fff; font-weight: bold; }
   
   .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+  /* 시계 (체스닷컴 스타일) */
+  .clock-row { display: flex; justify-content: space-between; align-items: center; }
+  .clock-row .who { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+  .dot.b { background: #111; border: 1px solid #555; } .dot.w { background: #eee; border: 1px solid #999; }
+  .clock { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 24px; font-weight: 700; padding: 6px 16px; border-radius: 6px; min-width: 112px; text-align: center; letter-spacing: 1px; transition: background .2s, color .2s, box-shadow .2s; }
+  .clock.w { background: #3a3a3a; color: #8d8d8d; } .clock.w.active { background: #fff; color: #111; }
+  .clock.b { background: #1a1a1a; color: #6f6f6f; } .clock.b.active { background: #000; color: #fff; box-shadow: 0 0 0 2px #555; }
+  .clock.active.low { color: #ff5d4a; }
+  body.no-clock .clock-row { display: none; }
+
+  /* 승률 바 (훈련 모드) */
+  .board-row { display: flex; gap: 10px; align-items: stretch; }
+  .board-row .board { flex: 1; min-width: 0; }
+  .eval-bar { width: 26px; flex: none; position: relative; background: #e6e6e6; border-radius: 4px; overflow: hidden; border: 1px solid #333; }
+  .eval-bar .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 50%; background: #141414; transition: height .6s cubic-bezier(.2,.8,.2,1); }
+  .eval-bar .lbl { position: absolute; left: 0; right: 0; text-align: center; font-size: 9px; font-weight: 700; font-family: ui-monospace, Menlo, Consolas, monospace; pointer-events: none; }
+  .eval-bar .lbl.top { top: 5px; color: #111; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+  .eval-bar .lbl.bottom { bottom: 5px; color: #fff; text-shadow: 0 0 3px #000, 0 0 3px #000; }
+  .eval-bar.pending::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(227,176,75,.28) 0 6px, transparent 6px 12px); }
+
+  /* 규칙 버튼 (우측 하단 고정) */
+  .rules-fab { position: fixed; right: 20px; bottom: 20px; z-index: 50; padding: 10px 18px; border-radius: 24px; background: #222; border: 1px solid #444; color: #eee; font-weight: 600; font-size: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.6); }
+  .rules-fab:hover { background: #333; }
+
+  /* 새 게임 이펙트 */
+  .board .flash { position: absolute; inset: 0; background: radial-gradient(circle, rgba(255,255,255,.6), rgba(255,255,255,0) 70%); animation: flashOut .8s ease-out forwards; pointer-events: none; z-index: 6; }
+  @keyframes flashOut { from { opacity: 1; transform: scale(.6); } to { opacity: 0; transform: scale(1.5); } }
+  .board .banner { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,.78); color: #fff; padding: 10px 24px; border-radius: 8px; font-size: 22px; font-weight: 800; letter-spacing: 1px; animation: bannerPop 1.5s ease-out forwards; pointer-events: none; z-index: 7; text-align: center; white-space: nowrap; }
+  .board .banner small { display: block; font-size: 12px; font-weight: 500; color: var(--accent); margin-top: 2px; letter-spacing: 0; }
+  @keyframes bannerPop { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.7); } 15% { opacity: 1; transform: translate(-50%,-50%) scale(1.06); } 25% { transform: translate(-50%,-50%) scale(1); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%,-62%) scale(1); } }
+  #stones.clearing { opacity: 0; transform: scale(.92); transition: opacity .25s, transform .25s; }
   .btn { background: #1a1a1a; border: 1px solid #333; color: #ddd; padding: 12px; border-radius: 4px; font-size: 15px; font-weight: 600; transition: background 0.2s; }
   .btn:hover:not(:disabled) { background: #2a2a2a; }
   .btn.primary { background: #ddd; color: #000; border-color: #ddd; }
@@ -148,13 +181,18 @@
     </div>
     <div class="status-box">
       <div id="turnBox" class="turn-text">흑 차례</div>
-      <div id="winrateBox" class="winrate-text train-only">예상 승률: -</div>
+      <div id="winrateBox" class="winrate-text train-only">흑 — · 백 —</div>
     </div>
-    <div class="board" id="board">
-      <div class="grid" id="grid"></div>
-      <div class="layer" id="ghosts"></div>
-      <div class="layer" id="stones"></div>
+    <div class="clock-row top"><div class="who"><span class="dot w"></span>백</div><div class="clock w" id="clockW">0:00</div></div>
+    <div class="board-row">
+      <div class="eval-bar train-only" id="evalBar"><div class="fill" id="evalFill"></div><div class="lbl top" id="evalTop">—</div><div class="lbl bottom" id="evalBottom">—</div></div>
+      <div class="board" id="board">
+        <div class="grid" id="grid"></div>
+        <div class="layer" id="ghosts"></div>
+        <div class="layer" id="stones"></div>
+      </div>
     </div>
+    <div class="clock-row bottom"><div class="who"><span class="dot b"></span>흑</div><div class="clock b" id="clockB">0:00</div></div>
   </div>
 
   <div class="panel-col">
@@ -171,6 +209,16 @@
           <button data-v="7">7x7</button>
           <button data-v="9" class="on">9x9</button>
           <button data-v="11">11x11</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="label">시간</div>
+        <div class="seg" id="timeSeg">
+          <button data-v="0" class="on">없음</button>
+          <button data-v="180">3분</button>
+          <button data-v="300">5분</button>
+          <button data-v="600">10분</button>
+          <button data-v="1800">30분</button>
         </div>
       </div>
       <div class="control-group">
@@ -207,13 +255,14 @@
 
     <div class="action-grid">
       <button class="btn primary" id="newBtn">새 게임</button>
-      <button class="btn" id="tutorialBtn">게임 규칙</button>
+      <button class="btn" id="resignBtn">기권</button>
       <button class="btn train-only" id="undoBtn">무르기</button>
       <button class="btn train-only" id="hintBtn">힌트 보기</button>
-      <button class="btn" id="resignBtn">기권</button>
     </div>
   </div>
 </div>
+
+<button class="rules-fab" id="tutorialBtn">게임 규칙</button>
 
 <!-- 튜토리얼 모달 -->
 <div id="tutorialModal" class="modal-overlay">
@@ -225,42 +274,42 @@
     
     <div class="modal-body">
       <div class="page active" id="page1">
-        <h3>1</h3>
+        <h3>목표</h3>
         <p>흑과 백이 번갈아 빈 칸에 돌을 하나씩 놓는다.</p>
-        <p>상하좌우로 붙어 이어진 같은 색의 돌을 무리라고 부른다. <b>대각선으로 연결된 것은 무리가 아니다.</b></p>
-        <p>게임이 끝났을 때 <span class="key">가장 큰 무리</span>가 더 큰 쪽이 이긴다.</p>
+        <p>끝났을 때 <span class="key">가장 큰 무리</span>가 더 큰 쪽이 이긴다.</p>
+        <p>무리는 상하좌우로 붙어 이어진 같은 색 돌. <b>대각선은 이어진 게 아니다.</b></p>
         <div class="ex-container single" id="ex1"></div>
       </div>
 
       <div class="page" id="page2">
-        <h3>2</h3>
-        <p>돌을 놓으면 그 돌은 중력을 낸다. 상·하·좌·우 각 방향에서 <span class="key">가장 가까운 돌 하나</span>가 빈 칸을 미끄러져 새 돌 옆에 붙는다.</p>
+        <h3>중력</h3>
+        <p>돌을 놓으면 그 돌이 중력을 낸다. 상·하·좌·우 각 방향에서 <span class="key">가장 가까운 돌 하나</span>가 빈 칸을 미끄러져 새 돌 옆에 붙는다.</p>
         <ul>
           <li>색은 상관없다.</li>
-          <li>이미 붙어 있는 돌은 움직이지 않는다.</li>
-          <li>한 수에 최대 4개의 돌이 움직인다.</li>
+          <li>이미 붙어 있는 돌은 그대로.</li>
+          <li>한 수에 최대 4개가 움직인다.</li>
         </ul>
         <div class="ex-container single" id="demo2"></div>
-        <p class="note">놓기 전에 빈 칸에 마우스를 올리면(휴대폰은 한 번 누르면) 이후의 상황이 미리 보인다.</p>
+        <p class="note">놓기 전에 빈 칸에 마우스를 올리면(휴대폰은 한 번 누르면) 미리 보인다.</p>
       </div>
 
       <div class="page" id="page3">
-        <h3>3</h3>
-        <p>이 보드에는 가장자리의 개념이 존재하지 않는다. 왼쪽 끝은 오른쪽 끝과, 위쪽 끝은 아래쪽 끝과 연결돼 있는 판정이다.</p>
+        <h3>벽 너머</h3>
+        <p>이 판은 끝이 없다. 왼쪽 끝을 지나면 오른쪽 끝, 위쪽 끝을 지나면 아래쪽 끝이다.</p>
         <ul>
-          <li><b>중력 효과도 벽을 넘어 작용한다.</b> 특정 방향에 돌이 없어 보여도 벽 너머에 있다면 끌려온다.</li>
-          <li><b>무리의 개념도 벽을 넘을 수 있다.</b> 왼쪽 끝 돌과 오른쪽 끝 돌은 붙어 있는 판정이다.</li>
+          <li><b>중력도 벽을 넘는다.</b> 어떤 방향에 돌이 없어 보여도 벽 너머에 있으면 끌려온다.</li>
+          <li><b>무리도 벽을 넘는다.</b> 왼쪽 끝 돌과 오른쪽 끝 돌은 붙어 있는 것이다.</li>
         </ul>
         <div class="ex-container"><div id="demo3"></div><div id="ex3b"></div></div>
-        <p class="note">한 줄에 돌이 하나뿐이면 새 돌이 놓였을 때 양쪽 방향에서 가장 가까운 돌이 되어 버린다. 이때는 돌이 가까운 쪽 길로 이동한다.</p>
+        <p class="note">한 줄에 돌이 하나뿐이면 양쪽에서 다 가장 가까운 돌이다. 이때는 가까운 쪽 길로 한 번만 온다.</p>
       </div>
 
       <div class="page" id="page4">
-        <h3>4</h3>
-        <p><span class="key">빈 칸이 하나 남으면</span> 게임이 끝난다.</p>
-        <p>가장 큰 무리의 돌이 많은 쪽이 이긴다. 같으면 두 번째 무리, 그다음 세 번째... 순서로 비교한다.</p>
+        <h3>끝과 승패</h3>
+        <p><span class="key">빈 칸이 하나 남으면</span> 끝난다. 흑과 백은 같은 수의 돌을 놓는다.</p>
+        <p>가장 큰 무리가 큰 쪽이 이긴다. 같으면 두 번째 무리, 그다음 세 번째… 순서로 비교한다.</p>
         <div class="ex-container"><div id="ex4a"></div><div id="ex4b"></div></div>
-        <p class="note">모든 무리의 돌 수가 같으면 백(후공)이 이긴다.</p>
+        <p class="note">전부 같으면 백(후공)이 이긴다.</p>
       </div>
     </div>
     
@@ -540,6 +589,7 @@ function mctsChooseAsync(board, plies, toMove, opts, callback){
     const chunkStart = Date.now();
     while(it < iters) {
       if ((it & 63) === 0) {
+        if (opts.isStale && opts.isStale()) return; // 판이 바뀌어 결과가 필요 없어짐
         if (Date.now() - start > timeMs) break;
         if (Date.now() - chunkStart > 30) {
           setTimeout(chunk, 0); // 메인 스레드에 양보하여 UI 끊김 방지
@@ -569,6 +619,7 @@ function mctsChooseAsync(board, plies, toMove, opts, callback){
     let pick = kids[0];
     if(opts.topRandom && kids.length > 1) pick = kids[(rnd() * Math.min(opts.topRandom, kids.length))|0];
     
+    if (opts.isStale && opts.isStale()) return;
     callback({move: pick.move, winrate: pick.n ? pick.w/pick.n : 0.5});
   }
   chunk();
@@ -586,8 +637,13 @@ const LEVELS = {
    ===================================================================== */
 const $ = id => document.getElementById(id);
 let game, selected = -1, hintCell = -1;
-let thinking = false, lastPlayerWinRate = null, isAnimating = false;
+let thinking = false, isAnimating = false;
 let gameType = 'play', mode = 'ai', level = '2', humanColor = BLACK;
+let timeControl = 0;                 // 초 단위, 0 = 없음
+let clock = {1: 0, 2: 0}, clockRunning = 0, lastTick = 0;
+let winProb = null;                  // 흑 승리 확률 (0~1), null = 아직 없음
+let evalPending = false, evalToken = 0, newGameToken = 0;
+const EVAL_OPTS = {iters: 6000, timeMs: 2000};
 const stoneEls = new Map();
 const IS_HOVER = window.matchMedia && window.matchMedia('(hover: hover)').matches;
 
@@ -674,8 +730,9 @@ function showPreview(cell){
 function clearPreview(){ $('ghosts').innerHTML=''; stoneEls.forEach(el=>el.classList.remove('will-move')); }
 
 function commit(cell){
-  clearPreview(); selected = -1; hintCell = -1;
+  clearPreview(); selected = -1; hintCell = -1; evalToken++; evalPending = false;
   playMove(game, cell);
+  switchClock();
   isAnimating = true; 
   render(); 
   
@@ -683,11 +740,25 @@ function commit(cell){
   setTimeout(() => {
     isAnimating = false;
     render(); 
-    if(mode === 'ai' && !game.result && game.toMove !== humanColor) {
-      runAITurn();
-    }
+    if(game.result) return;
+    if(mode === 'ai' && game.toMove !== humanColor) runAITurn();
+    else requestEval();
   }, 1000);
 }
+
+// 훈련 모드: 현재 판을 차례인 쪽 입장에서 평가해 승률 바를 갱신
+function requestEval(){
+  if(gameType !== 'train' || game.result) return;
+  const t = ++evalToken;
+  evalPending = true; renderWinrate();
+  mctsChooseAsync(game.board, game.plies, game.toMove, {...EVAL_OPTS, isStale: () => t !== evalToken}, (r) => {
+    if(t !== evalToken) return;
+    evalPending = false;
+    setWinProb(game.toMove, r.winrate);
+    renderWinrate();
+  });
+}
+function setWinProb(side, wr){ winProb = side === BLACK ? wr : 1 - wr; }
 
 function runAITurn() {
   thinking = true; render(); 
@@ -700,8 +771,10 @@ function runAITurn() {
     
     setTimeout(() => {
       thinking = false;
-      lastPlayerWinRate = Math.max(0, Math.min(100, Math.round((1 - r.winrate) * 100)));
+      if(game.result){ render(); return; } // 생각하는 동안 시간 초과 등으로 끝난 경우
+      setWinProb(game.toMove, r.winrate);
       playMove(game, r.move);
+      switchClock();
       isAnimating = true;
       render();
       
@@ -709,6 +782,7 @@ function runAITurn() {
       setTimeout(() => {
         isAnimating = false;
         render();
+        if(!game.result) requestEval();
       }, 1000);
     }, waitTime);
   });
@@ -773,19 +847,16 @@ function render(){
   
   if(game.result){
     const winnerName = game.result.winner === BLACK ? '흑' : '백';
-    $('turnBox').textContent = game.result.resigned ? `${winnerName} 승리 (기권)` : `${winnerName} 승리!`;
+    const how = game.result.resigned ? ' (기권)' : game.result.timeout ? ' (시간 초과)' : '!';
+    $('turnBox').textContent = `${winnerName} 승리${how}`;
     $('turnBox').style.color = 'var(--accent)';
-    $('winrateBox').textContent = '-';
+    clockRunning = 0;
   } else {
     $('turnBox').textContent = (game.toMove===BLACK ? '흑' : '백') + ' 차례';
     $('turnBox').style.color = '#fff';
-    
-    if(gameType === 'train'){
-      if(thinking) $('winrateBox').textContent = '계산 중...';
-      else if(lastPlayerWinRate !== null) $('winrateBox').textContent = `내 예상 승률: ${lastPlayerWinRate}%`;
-      else $('winrateBox').textContent = `내 예상 승률: -`;
-    }
   }
+  renderWinrate();
+  renderClocks();
   
   $('placedCount').textContent = `${game.plies} / ${MAX_PLIES}`;
   const gb = groupSizes(game.board, BLACK), gw = groupSizes(game.board, WHITE);
@@ -799,38 +870,117 @@ function render(){
   $('colorRow').style.display = mode === 'ai' ? 'flex' : 'none';
 }
 
+// 승률 표시: 숫자(흑·백 각각, 소수점 한 자리)와 세로 바(아래 흑, 위 백)
+function renderWinrate(){
+  if(gameType !== 'train') return;
+  const box = $('winrateBox'), bar = $('evalBar');
+  bar.classList.toggle('pending', (evalPending || thinking) && !game.result);
+  let pb;
+  if(game.result) pb = game.result.winner === BLACK ? 1 : 0;
+  else pb = winProb;
+  if(pb === null || pb === undefined){
+    box.textContent = thinking ? '계산 중…' : '흑 — · 백 —';
+    $('evalFill').style.height = '50%'; $('evalTop').textContent = '—'; $('evalBottom').textContent = '—';
+    return;
+  }
+  const b = pb * 100, w = 100 - b;
+  box.textContent = (thinking && !game.result ? '계산 중… ' : '') + `흑 ${b.toFixed(1)}% · 백 ${w.toFixed(1)}%`;
+  $('evalFill').style.height = b + '%';
+  $('evalTop').textContent = w.toFixed(1) + '%';
+  $('evalBottom').textContent = b.toFixed(1) + '%';
+}
+
+/* ---------- 시계 ---------- */
+function fmtClock(ms){
+  if(ms < 0) ms = 0;
+  if(ms < 10000) return '0:0' + (ms/1000).toFixed(1);
+  const s = Math.ceil(ms/1000);
+  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+function renderClocks(){
+  for(const [side, id] of [[WHITE,'clockW'],[BLACK,'clockB']]){
+    const el = $(id);
+    el.textContent = fmtClock(clock[side]);
+    el.classList.toggle('active', clockRunning === side);
+    el.classList.toggle('low', timeControl > 0 && clock[side] < 20000);
+  }
+}
+// 수를 둔 직후 호출: 차례인 쪽의 시계를 돌린다 (첫 수 전에는 아무 시계도 안 돈다)
+function switchClock(){
+  if(!timeControl || game.result){ clockRunning = 0; renderClocks(); return; }
+  clockRunning = game.toMove; lastTick = Date.now(); renderClocks();
+}
+function tick(){
+  if(!clockRunning || !game || game.result) return;
+  const now = Date.now(); clock[clockRunning] -= now - lastTick; lastTick = now;
+  if(clock[clockRunning] <= 0){
+    clock[clockRunning] = 0;
+    const loser = clockRunning; clockRunning = 0;
+    game.result = { winner: 3 - loser, timeout: true };
+    thinking = false; evalToken++; evalPending = false; clearPreview(); selected = -1;
+    render(); return;
+  }
+  renderClocks();
+}
+setInterval(tick, 100);
+
+function newGameEffect(){
+  const board = $('board');
+  board.querySelectorAll('.flash, .banner').forEach(e => e.remove());
+  const f = document.createElement('div'); f.className = 'flash'; board.appendChild(f);
+  const b = document.createElement('div'); b.className = 'banner';
+  const tc = timeControl ? ` · 각 ${timeControl/60}분` : '';
+  b.innerHTML = `새 게임<small>흑 선공 · ${N}×${N}${tc}</small>`; board.appendChild(b);
+  setTimeout(() => { f.remove(); b.remove(); }, 1600);
+}
+
 function showHint(){
   if(thinking || game.result || !myTurn() || gameType === 'play' || isAnimating) return;
-  thinking = true; $('winrateBox').textContent = '최적의 수 찾는 중...'; render();
-  
-  mctsChooseAsync(game.board, game.plies, game.toMove, LEVELS['4'], (r) => {
+  thinking = true; evalToken++; evalPending = false; render();
+  const t = evalToken;
+  mctsChooseAsync(game.board, game.plies, game.toMove, {...LEVELS['4'], isStale: () => t !== evalToken}, (r) => {
+    if(t !== evalToken) return;
     hintCell = r.move;
     thinking = false;
-    lastPlayerWinRate = Math.round(r.winrate * 100);
+    setWinProb(game.toMove, r.winrate);
     render();
   });
 }
 
 function startGame(){
-  game = newGame(); selected = -1; hintCell = -1; thinking = false; isAnimating = false; lastPlayerWinRate = null;
-  stoneEls.forEach(el=>el.remove()); stoneEls.clear(); clearPreview();
-  render(); 
-  
-  if(mode === 'ai' && game.toMove !== humanColor) {
-    runAITurn();
-  }
+  const token = ++newGameToken; evalToken++; evalPending = false; winProb = null;
+  const layer = $('stones');
+  const hadStones = !!(game && game.stones.length);
+  game = newGame(); selected = -1; hintCell = -1; thinking = false; isAnimating = false;
+  clearPreview();
+  clock = {1: timeControl*1000, 2: timeControl*1000}; clockRunning = 0;
+  document.body.classList.toggle('no-clock', timeControl === 0);
+  const finish = () => {
+    stoneEls.forEach(el=>el.remove()); stoneEls.clear();
+    layer.classList.remove('clearing');
+    render();
+    newGameEffect();
+    if(mode === 'ai' && game.toMove !== humanColor) runAITurn();
+    else requestEval();
+  };
+  if(hadStones){
+    layer.classList.add('clearing'); isAnimating = true;
+    setTimeout(() => { if(token !== newGameToken) return; isAnimating = false; finish(); }, 260);
+  } else finish();
 }
 
 function undo(){
   if(thinking || gameType === 'play' || game.moves.length === 0 || isAnimating) return;
+  evalToken++; evalPending = false;
   undoMove(game);
   if(mode==='ai' && game.toMove!==humanColor && game.moves.length) undoMove(game);
-  selected = -1; hintCell = -1; lastPlayerWinRate = null; clearPreview(); render();
+  selected = -1; hintCell = -1; winProb = null; clearPreview(); switchClock(); render();
+  requestEval();
 }
 
 function resign(){
   if(game.result) return;
-  if(confirm("기권하시겠습니까?")){ game.result = { winner: 3 - game.toMove, resigned: true }; render(); }
+  if(confirm("기권하시겠습니까?")){ game.result = { winner: 3 - game.toMove, resigned: true }; evalToken++; evalPending = false; clearPreview(); render(); }
 }
 
 function bindSeg(id, onPick){
@@ -842,7 +992,8 @@ function bindSeg(id, onPick){
 }
 
 bindSeg('sizeSeg', v => { initBoardData(Number(v)); buildUIGrid(); startGame(); });
-bindSeg('typeSeg', v => { gameType = v; document.body.className = v + '-mode'; lastPlayerWinRate = null; hintCell = -1; render(); });
+bindSeg('typeSeg', v => { gameType = v; document.body.className = v + '-mode' + (timeControl === 0 ? ' no-clock' : ''); hintCell = -1; render(); if(v === 'train' && !thinking && !isAnimating) requestEval(); });
+bindSeg('timeSeg', v => { timeControl = Number(v); startGame(); });
 bindSeg('modeSeg', v => { mode = v; startGame(); });
 bindSeg('levelSeg', v => { level = v; });
 bindSeg('colorSeg', v => { humanColor = Number(v); startGame(); });
